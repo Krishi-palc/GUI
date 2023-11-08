@@ -11,7 +11,7 @@ function Modal({close , nodeId}) {
             <div className="modal_container">
                 <div className='modal_close' onClick={()=>close(false)}>&times;</div>
                 <div className="modal_title">
-                    <h4 style={{fontFamily:'initial',fontWeight:'bold'}}>Dynamic Filter</h4>
+                    <h4>Dynamic Filter</h4>
                 </div> 
                 <div className="modal_content">
                     <Tab nodeId={nodeId}/>

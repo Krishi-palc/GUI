@@ -50,8 +50,8 @@ export default () => {
   return (
     <>
   <div className="panel">
-    <div style={{height:'50px', margin:'10px',textAlign:'center',marginBottom:'50px'}}>
-    <h4 style={{fontFamily:'initial'}}>Available Interfaces</h4>
+    <div id="a1">
+    <h4 id='a2'>Available Interfaces</h4>
     <hr></hr>
     </div>
     <div>

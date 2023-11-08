@@ -10,6 +10,8 @@ import ContextMenu from "./ContextMenu";
 import url1 from "./url1";
 import dagre from "dagre";
 
+import "./app.css";
+
 let fid = 1001; // Filter id
 const getFId = () => `${fid++}`;
 
@@ -362,13 +364,10 @@ const DnDFlow = () => {
             panOnDrag={panOnDrag}
           >
             <Controls/>
-            <Panel position="top-left" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',marginLeft:'55px',textAlign:'center',fontWeight:'bold'}}>Network Port</Panel>
-            <Panel position="top-right" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',marginRight:'55px',textAlign:'center',fontWeight:'bold'}} >Tool Port</Panel>
-            <Panel position="center" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',justifyContent:'center',textAlign:'center',fontWeight:'bold'}} >
-              Filter  <img src="plus.png" alt="no image" style={{height:'20px',width:'20px',marginLeft:'10px'}} onClick={onclick}></img></Panel>
-            <Panel position="bottom-right">
-              <button onClick={() => onLayout("LR")}>horizontal layout</button>
-            </Panel>
+            <Panel position="top-left" className='z1'>Network Port</Panel>
+            <Panel position="top-right" className='z1'>Tool Port</Panel>
+            <Panel position="center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
+            <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>horizontal layout</Panel>
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}

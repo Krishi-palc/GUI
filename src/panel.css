@@ -4,6 +4,19 @@
   background-color: white;
   border: 2px solid black;
   overflow-y: scroll;
+  
+  justify-content: center;
+}
+
+.panel #a1{
+  text-align:center;
+ 
+}
+
+.panel #a2{
+ font-family:initial;
+ text-align:center;
+
 }
 
 .my-button{
