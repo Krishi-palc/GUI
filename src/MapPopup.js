@@ -1,5 +1,7 @@
-import { useState } from 'react';
-function MapPopup() {
+import { useState , useEffect } from 'react';
+import url1 from './url1';
+
+function MapPopup(props) {
   const [textarea, setTextarea] = useState();
   const [MapId, setMapId] = useState("");
   const [NetPort, setNetPort] = useState("");
@@ -8,6 +10,35 @@ function MapPopup() {
   const handleChange = (event) => {
     setTextarea(event.target.value)
   }
+
+  const fetchData = async () => {
+    try {
+      // const url = "https://my-json-server.typicode.com/rajkumar-palc/api/ethernet";
+      // const url = "http://localhost:2000/api/ethernets";
+      const url = `${url1}/Map/${props.nodeId}`;
+      const response = await fetch(url);
+      
+      // console.log("Node Id in Popup : "+props.nodeId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const responseData = await response.json();
+      setMapId(responseData.id);
+      setNetPort(responseData.source);
+      setToolPort(responseData.destination);
+      setTextarea(responseData.description);
+      // console.log(responseData);
+    } 
+    catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  });
 
   return (
     <>

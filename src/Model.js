@@ -4,7 +4,8 @@ import { Button } from 'react-bootstrap';
 
 import Tab from "./Tab";
 
-function Modal({close}) {
+function Modal({close , nodeId}) {
+    // console.log("Node Id in Modal : "+nodeId);
     return (
         <div className="modal">
             <div className="modal_container">
@@ -13,7 +14,7 @@ function Modal({close}) {
                     <h4 style={{fontFamily:'initial',fontWeight:'bold'}}>Dynamic Filter</h4>
                 </div> 
                 <div className="modal_content">
-                    <Tab/>
+                    <Tab nodeId={nodeId}/>
                 </div>
                 <div className="modal_footer">
                    <button className='my-button'>Save</button>

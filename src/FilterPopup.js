@@ -1,8 +1,8 @@
 import React,{ useState } from 'react';
 import Switch from "react-switch";
 
-function FilterPopup() {
-    const [MapId, setMapId] = useState("");
+function FilterPopup(props) {
+    const [MapId, setMapId] = useState(props.nodeId);
     const [RuleId, setRuleId] = useState("");
     const [allchecked, setAllChecked] = React.useState([]);
     const [toggleCheck, setToggleCheck] = useState(false);

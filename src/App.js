@@ -1,12 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
-import ReactFlow, {
-  ReactFlowProvider,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Controls,
-} from "reactflow";
-import { Panel } from "reactflow";
+import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel } from "reactflow";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
@@ -14,17 +7,49 @@ import "./index.css";
 import "./panel.css";
 import Modal from "./Model";
 import ContextMenu from "./ContextMenu";
+import url1 from "./url1";
+import dagre from "dagre";
 
-// import CustomNode from './CustomNode';
-
-let fid = 1002; // Filter id
+let fid = 1001; // Filter id
 const getFId = () => `${fid++}`;
 
 const panOnDrag = [2, 2];
 
-// const nodeTypes = {
-//   custom: CustomNode,
-// };
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+ 
+const nodeWidth = 390;
+const nodeHeight = 10;
+ 
+// For Dagre Tree Layout
+const getLayoutedElements = (nodes, edges, direction = "TB") => {
+  const isHorizontal = direction === "LR";
+  dagreGraph.setGraph({ rankdir: direction });
+ 
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+ 
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+ 
+  dagre.layout(dagreGraph);
+ 
+  nodes.forEach((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      node.targetPosition = isHorizontal ? "left" : "top";
+      node.sourcePosition = isHorizontal ? "right" : "bottom";
+      node.position = {
+          x: nodeWithPosition.x - nodeWidth / 2,
+          y: nodeWithPosition.y - nodeHeight / 2
+      };
+      return node;
+  });
+ 
+  return { nodes, edges };
+};
+
 
 const DnDFlow = () => {
   
@@ -33,98 +58,140 @@ const DnDFlow = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
+  const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
  
+
   // On Connect
   const onConnect = useCallback(
-    (params,) => {
-
-      console.log(params);
-
-      // console.log(edges);
-      // console.log(nodes);
-
-      const e1 = edges.filter((edge) => edge.source === params.source || edge.target === params.source);
-      const e2 = edges.filter((edge) => edge.source === params.target || edge.target === params.target);
-      console.log(e1);
-      console.log(e2);
-      setEdges((eds) => addEdge(params, eds));
-      
+    (params) => {
+      const sourceNode = nodes.filter((node) => node.id === params.source);
+      const targetNode = nodes.filter((node) => node.id === params.target);
+      const hasSource = edges.some((edge) => edge.source === params.source);
+      const hasTarget = edges.some((edge) => edge.target === params.target);
+      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
+          if(!hasSource && !hasTarget){ // Node has old connection 
+              setEdges((eds) => addEdge(
+                {
+                  ...params,
+                  type : "smoothstep",
+                  animated: true,
+                  style: {
+                    stroke: 'black'
+                  }
+                }, 
+              eds))
+          }
+      }
     },
-    [setEdges, edges, nodes]
-    );
+    [edges,nodes]
+  );
 
   // On Dragover 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
-  
+
   // On Drop 
   const onDrop = useCallback(
     (event) => {
-      event.preventDefault();
+        event.preventDefault();
+        const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+        const type = event.dataTransfer.getData("application/reactflow");
+        const id = event.dataTransfer.getData("id");
+        const name = event.dataTransfer.getData("name");
 
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData("application/reactflow");
-      const id = event.dataTransfer.getData("id");
-      const name = event.dataTransfer.getData("name");
+        // check if the dropped element is valid
+        if (typeof type === "undefined" || !type) {
+            return;
+        }
 
-      // check if the dropped element is valid
-      if (typeof type === "undefined" || !type) {
-        return;
-      }
-
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top
-      });
-      
-      // Handler Position on nodes based on the PORT (Network | Tool)
-      let sourcePos = null;
-      let targetPos = null;
-      let type2 = null;
-      if(position.x <= 490){
-        sourcePos = "right";
-        type2 = "input";
-      }
-      else{
-        targetPos = "left";
-        type2 = "output";
-      }
-
-      const newNode = {
-        id: id,
-        type,
-        position,
-        sourcePosition: sourcePos,
-        targetPosition: targetPos,
-        data: { label: `${name}`},
-        type: type2
-      };
-
-      setNodes((nds) => nds.concat(newNode));
-
-      // Update the ethernet is used
-      fetch(`http://localhost:8080/Ethernet`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({id: `${id}`,name : `${name}`,usage : "yes"}),
-      }).then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          console.log('Updated data:', data);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
+        const position = reactFlowInstance.project({
+            x: event.clientX - reactFlowBounds.left,
+            y: event.clientY - reactFlowBounds.top
         });
+
+        // Handler Position on nodes based on the PORT (Network | Tool)
+        let sourcePos = null;
+        let targetPos = null;
+        let type2 = null;
+        if (position.x <= 490) {
+            sourcePos = "right";
+            type2 = "input";
+        } else {
+            targetPos = "left";
+            type2 = "output";
+        }
+
+        const newNode = {
+            id: id,
+            type,
+            position,
+            sourcePosition: sourcePos,
+            targetPosition: targetPos,
+            data: { label: `${name}` },
+            type: type2,
+            type1: "normal",
+            draggable: false
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+
+        // Update the ethernet is used
+        fetch(`${url1}/Ethernet`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: `${id}`,
+                    name: `${name}`,
+                    usage: "yes"
+                }),
+            }).then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log('Change Node usability : ', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+
+        // Insert the node into db
+        fetch(`${url1}/Node`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: newNode.id,
+                    x: newNode.position.x,
+                    y: newNode.position.y,
+                    sourcePosition: newNode.sourcePosition,
+                    targetPosition: newNode.targetPosition,
+                    name: newNode.data.label,
+                    type1: newNode.type1,
+                    type: newNode.type
+                }),
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                // console.log('Updated data:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
     },
     [reactFlowInstance, nodes, setNodes]
   );
@@ -140,10 +207,12 @@ const DnDFlow = () => {
       setMenu({
         id: node.id,
         name: node.data.label,
+        type1: node.type1,
         top: e.clientY,
         left: e.clientX,
         right: false,
-        bottom: false
+        bottom: false,
+        draggable: false
       });
     },
     [setMenu]
@@ -152,18 +221,49 @@ const DnDFlow = () => {
   // onclick the filter 
   const onclick = useCallback((event) => {
     const ID1 = getFId();
-    const pos = 50 * (ID1 % 1000);
+    const pos = 70 * ((ID1 % 1000)+1);
     const newnode = {
       id: ID1,
-      position:{ x:490, y: pos},
+      position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
       data: { label: `Filter ${ID1 % 1000}` },
-      type1: "filter"
+      type1: "filter",
+      type: "default",
+      draggable: false
     };
 
+    // Insert the node
+    fetch(`${url1}/Node`, {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+          id: newnode.id,
+          x: newnode.position.x,
+          y: newnode.position.y,
+          sourcePosition: newnode.sourcePosition,
+          targetPosition: newnode.targetPosition,
+          name: newnode.data.label,
+          type1: newnode.type1,
+          type: newnode.type
+      }),
+    })
+    .then((response) => {
+          if (!response.ok) {
+              throw new Error('Network response was not ok');
+          }
+          return response.json();
+    })
+    .then((data) => {
+          // console.log('Updated data:', data);
+    })
+    .catch((error) => {
+          console.error('Error:', error);
+    });
+
     setNodes((nds) => nds.concat(newnode));
-    console.log(edges);
   }, []);
 
   // Click the filter node
@@ -176,9 +276,64 @@ const DnDFlow = () => {
   
       if (hasLeftConnection && hasRightConnection) {
         setshowModal(true);
-      }
+        // Set the node for model
+        setNodeId(node.id);
+
+        // Insert the Map
+        const target1 = connectedEdges.filter((edge) => edge.source === node.id);
+        const source1 = connectedEdges.filter((edge) => edge.target === node.id);
+
+        fetch(`${url1}/Map`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id : node.id,
+                source : source1[0].source,
+                destination : target1[0].target,
+                description : node.data.label
+            }),
+        })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Updated data:', data);
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      } 
     }
   };
+
+  // OnLayout
+  const onLayout = useCallback(
+      (direction) => {
+          const { 
+            nodes: layoutedNodes,
+            edges: layoutedEdges
+          } = getLayoutedElements(nodes, edges, direction);
+
+          // Update the position of each node to start a few steps below its original position
+          const yOffset = 90; // Adjust this value to set the desired vertical offset
+          const xOffSet = 40;
+          const adjustedNodes = layoutedNodes.map((node) => (
+            {
+                ...node,
+               position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+            }
+          ));
+          
+          setNodes([...adjustedNodes]);
+          setEdges([...layoutedEdges]);
+      },
+      [nodes, edges]
+  );
   
   return (
     <div className="dndflow">
@@ -186,9 +341,10 @@ const DnDFlow = () => {
       <ReactFlowProvider>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
 
-           { showModal && (
-          <Modal close={setshowModal}/>
-          )}
+        { showModal && (
+          <Modal close={setshowModal} nodeId={nodeId}/>
+          )
+        }
 
           <ReactFlow
             ref={ref}
@@ -204,13 +360,15 @@ const DnDFlow = () => {
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             panOnDrag={panOnDrag}
-            // nodeTypes={nodeTypes}  
           >
+            <Controls/>
             <Panel position="top-left" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',marginLeft:'55px',textAlign:'center',fontWeight:'bold'}}>Network Port</Panel>
             <Panel position="top-right" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',marginRight:'55px',textAlign:'center',fontWeight:'bold'}} >Tool Port</Panel>
             <Panel position="center" style={{ border: '10px solid black',backgroundColor:'black',color:'white',width:'120px',justifyContent:'center',textAlign:'center',fontWeight:'bold'}} >
               Filter  <img src="plus.png" alt="no image" style={{height:'20px',width:'20px',marginLeft:'10px'}} onClick={onclick}></img></Panel>
-              
+            <Panel position="bottom-right">
+              <button onClick={() => onLayout("LR")}>horizontal layout</button>
+            </Panel>
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
