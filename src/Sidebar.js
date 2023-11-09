@@ -1,9 +1,8 @@
-
-
 import "./panel.css";
 
 import { Background, Panel } from "reactflow";
 import React, { useState ,useEffect} from "react";
+import url1 from "./url1";
 
 export default () => {
   const [data, setData] = useState([]);
@@ -19,7 +18,7 @@ export default () => {
     try {
       // const url = "https://my-json-server.typicode.com/rajkumar-palc/api/ethernet";
       // const url = "http://localhost:2000/api/ethernets";
-      const url = "http://localhost:8080/Ethernet";
+      const url = `${url1}/Ethernet`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -51,12 +50,12 @@ export default () => {
   return (
     <>
   <div className="panel">
-  <div style={{height:'50px', margin:'10px',textAlign:'center',marginBottom:'50px'}}>
-    <h4 style={{fontFamily:'initial'}}>Available Interfaces</h4>
+    <div id="a1">
+    <h4 id='a2'>Available Interfaces</h4>
     <hr></hr>
     </div>
     <div>
-		{data.map((data1) => (
+      {data.map((data1) => (
         <div
           className="dndnode"
           onDragStart={(event) => onDragStart(event, data1.id, data1.name, "default")}

@@ -4,8 +4,9 @@ import Tabs from 'react-bootstrap/Tabs';
 import MapPopup from './MapPopup';
 import FilterPopup from './FilterPopup';
 
-const Example = () => {
+const Example = (props) => {
   const [key, setKey] = useState('general');
+  // console.log("Node Id in Tab : "+props.nodeId);
   return (
  
     <Tabs
@@ -14,14 +15,11 @@ const Example = () => {
       onSelect={(k) => setKey(k)}
       className="mb-1"
     >
-
-
-      
     <Tab eventKey="general" title="General">
-        <MapPopup/>
+        <MapPopup nodeId={props.nodeId}/>
       </Tab>
       <Tab eventKey="filter" title="Filter">
-        <FilterPopup/>
+        <FilterPopup nodeId={props.nodeId}/>
       </Tab>
       </Tabs>
     

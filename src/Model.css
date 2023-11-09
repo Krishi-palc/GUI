@@ -24,6 +24,9 @@
 .modal_title {
     padding:5px 5px 3px 7px;
     border-bottom:1px solid #ccc;
+    font-family:initial;
+    font-weight:bold;
+
 }
 .modal_content{
     flex:3;
