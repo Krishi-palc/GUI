@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback,useEffect } from "react";
 import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel } from "reactflow";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "reactflow/dist/style.css";
@@ -63,7 +63,6 @@ const DnDFlow = () => {
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
- 
 
   // On Connect
   const onConnect = useCallback(
@@ -206,17 +205,19 @@ const DnDFlow = () => {
       // Prevent native context menu from showing
       e.preventDefault();
       
-      setMenu({
-        id: node.id,
-        name: node.data.label,
-        type1: node.type1,
-        top: e.clientY,
-        left: e.clientX,
-        right: false,
-        bottom: false,
-        draggable: false
-      });
-    },
+      //if (node.type1 === "filter") {
+        setMenu({
+          id: node.id,
+          name: node.data.label,
+          type1: node.type1,
+          top: e.clientY,
+          left: e.clientX,
+          right: true,
+          bottom: false,
+          draggable: false,
+        });
+      },
+    //},
     [setMenu]
   );
 
@@ -229,7 +230,8 @@ const DnDFlow = () => {
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { label: `Filter ${ID1 % 1000}` },
+      //data: { label: `Filter ${ID1 % 1000}` },
+      data: { label: `${ID1}` },
       type1: "filter",
       type: "default",
       draggable: false
@@ -268,51 +270,92 @@ const DnDFlow = () => {
     setNodes((nds) => nds.concat(newnode));
   }, []);
 
-  // Click the filter node
-  const onNodeClick = (event, node) => {
-    if (node.type1 === "filter") {
-      // Check the connection 
-      const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
-      const hasLeftConnection = connectedEdges.some((edge) => edge.target === node.id);
-      const hasRightConnection = connectedEdges.some((edge) => edge.source === node.id);
+  //Click the filter node
+  // const onNodeClick = (event, node) => {
+  //   if (node.type1 === "filter") {
+  //     // Check the connection 
+  //     const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
+  //     const hasLeftConnection = connectedEdges.some((edge) => edge.target === node.id);
+  //     const hasRightConnection = connectedEdges.some((edge) => edge.source === node.id);
   
-      if (hasLeftConnection && hasRightConnection) {
-        setshowModal(true);
-        // Set the node for model
-        setNodeId(node.id);
+  //     if (hasLeftConnection && hasRightConnection) {
+  //       setshowModal(true);
+  //       // Set the node for model
+  //       setNodeId(node.id);
 
-        // Insert the Map
-        const target1 = connectedEdges.filter((edge) => edge.source === node.id);
-        const source1 = connectedEdges.filter((edge) => edge.target === node.id);
+  //       // Insert the Map
+  //       const target1 = connectedEdges.filter((edge) => edge.source === node.id);
+  //       const source1 = connectedEdges.filter((edge) => edge.target === node.id);
 
-        fetch(`${url1}/Map`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id : node.id,
-                source : source1[0].source,
-                destination : target1[0].target,
-                description : node.data.label
-            }),
-        })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log('Updated data:', data);
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-          });
-      } 
-    }
-  };
+  //       fetch(`${url1}/Map`, {
+  //           method: 'POST',
+  //           headers: {
+  //               'Content-Type': 'application/json',
+  //           },
+  //           body: JSON.stringify({
+  //               id : node.id,
+  //               source : source1[0].source,
+  //               destination : target1[0].target,
+  //               description : node.data.label
+  //           }),
+  //       })
+  //       .then((response) => {
+  //           if (!response.ok) {
+  //               throw new Error('Network response was not ok');
+  //           }
+  //           return response.json();
+  //         })
+  //         .then((data) => {
+  //           console.log('Updated data:', data);
+  //         })
+  //         .catch((error) => {
+  //           console.error('Error:', error);
+  //         });
+  //     } 
+  //   }
+  // };
 
+ const onNodeClick = (event, node) => {
+  if (node.type1 === "filter") {
+    // Check the connection
+    const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
+
+    // Collect all connected node IDs
+    const connectedNodeIds = connectedEdges.reduce((acc, edge) => {
+      acc.push(edge.source, edge.target);
+      return acc;
+    }, []);
+
+    // Remove the filter node and all connected nodes
+    const newNodes = nodes.filter((n) => !connectedNodeIds.includes(n.id));
+
+    // Remove all connected edges
+    const newEdges = edges.filter((e) => !connectedEdges.includes(e));
+
+    // Delete the Map associated with the filter
+    fetch(`${url1}/Map/${node.id}`, {
+      method: 'DELETE',
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Deleted Map data:', data);
+    })
+    .catch((error) => {
+      console.error('Error deleting Map:', error);
+    });
+
+    // Update the state to reflect the changes
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }
+};
+
+  
   // OnLayout
   const onLayout = useCallback(
       (direction) => {
@@ -336,7 +379,27 @@ const DnDFlow = () => {
       },
       [nodes, edges]
   );
+
+  //retain data even after refreshing
+  useEffect(() => {
+    // Load data from local storage on component mount
+    const storedNodes = localStorage.getItem('flowchart-nodes');
+    const storedEdges = localStorage.getItem('flowchart-edges');
+
+    if (storedNodes && storedEdges) {
+      setNodes(JSON.parse(storedNodes));
+      setEdges(JSON.parse(storedEdges));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save data to local storage whenever nodes or edges change
+    localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+    localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  }, [nodes, edges]);
   
+
+
   return (
     <div className="dndflow">
       <Sidebar />
@@ -362,6 +425,9 @@ const DnDFlow = () => {
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             panOnDrag={panOnDrag}
+           
+            zoomOnScroll={false}
+            panOnScroll
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>

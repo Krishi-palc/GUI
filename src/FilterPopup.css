@@ -1,129 +1,130 @@
 .c3 td{
-    font-size: medium;
-    width:80%;
+  font-size: medium;
+  width:80%;
+  margin-left: 23px;
 }
 
 .c3 label{
-    font-weight: bold;
-    margin-left:10px;
-    font-family:initial;
+  font-weight: bold;
+  margin-left:10px;
+  font-family:initial;
 }
 .c3 input{
-    margin-right:15x;
-    margin-left:10px;
+  margin-right:15x;
+  margin-left:10px;
 
 }
 .c2{
-    height:30%;
-    flex-wrap:wrap;
+  height:30%;
+  flex-wrap:wrap;
 }
 .c1{
-    display:flex;
+  display:flex;
 }
 .final #c10 .btn-warning {
-    height: 45px;
-    width: 80px;
-    text-align: center;
-    color: white;
-  }
-  .c9 th{
-    font-family:initial;
-    text-align:center;
-  }
-  .c8{
-    text-align:end;
-  }
-  #bb1 {
-    margin-left: 50px;
-    margin-top: 5px;
-  }
-  
-  #bb2 {
-    margin-left: 90px;
-    margin-top: 5px;
-  }
-  .c4{
-    width:20px;
-    padding: 5px;
-  }
-  .c4 label{
-    font-weight: bold;
-    margin-left:10px;
-    font-family:initial;
-  }
-  .c4 #cc4 label span{
-    font-weight: bold;
-    font-family:initial;
+  height: 45px;
+  width: 80px;
+  text-align: center;
+  color: white;
+}
+.c9 th{
+  font-family:initial;
+  text-align:center;
+}
+.c8{
+  text-align:end;
+}
+#bb1 {
+  margin-left: 50px;
+  margin-top: 5px;
+}
 
-  }
+#bb2 {
+  margin-left: 90px;
+  margin-top: 5px;
+}
+.c4{
+  width:20px;
+  padding: 5px;
+}
+.c4 label{
+  font-weight: bold;
+  margin-left:10px;
+  font-family:initial;
+}
+.c4 #cc4 label span{
+  font-weight: bold;
+  font-family:initial;
 
-  .c6 #cc1{
-    border: 1px solid black;
-    text-align: center;
-    width: 2px;
-  }
-  .c6 #cc2{
-    border:1px solid black;
-    border-radius: 10px;
-    height: 10px;
-    margin-left: 20px;
-  }
-  .c6 #cc2 button{
-    margin-right:5px;
-    font-size:12px;
-    padding:10px;
-    margin-left:10px;
-    margin-bottom: 5px;
-    margin-top: 5px;
-  }
+}
+
+.c6 #cc1{
+  border: 1px solid black;
+  text-align: center;
+  width: 2px;
+}
+.c6 #cc2{
+  border:1px solid black;
+  border-radius: 10px;
+  height: 10px;
+  margin-left: 20px;
+}
+.c6 #cc2 button{
+  margin-right:5px;
+  font-size:12px;
+  padding:10px;
+  margin-left:10px;
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
 .c5 #cc1{
-    border: 1px solid black;
-    text-align:center;
-    width:2px;
+  border: 1px solid black;
+  text-align:center;
+  width:2px;
 }
 .c5 #cc2{
-    border:1px solid black;
-     border-radius:10px;
-     height: 10px;
-     margin-left: 20px;
+  border:1px solid black;
+   border-radius:10px;
+   height: 10px;
+   margin-left: 20px;
 }
 .c5 #cc2 button{
-    margin-right: 5px;
-    font-size: 12px;
-    padding:10px;
-    margin-left:5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
+  margin-right: 5px;
+  font-size: 12px;
+  padding:10px;
+  margin-left:5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .c7 #cc1{
-    border:1px solid black;
-     text-align: center;
+  border:1px solid black;
+   text-align: center;
 }
 .c7 #cc2{
-    border: 1px solid black;
-     border-radius: 10px;
-    height:10px; 
-    margin-left:20px;
+  border: 1px solid black;
+   border-radius: 10px;
+  height:10px;
+  margin-left:20px;
 }
 .c7 #cc2 button{
-    margin-right: 5px;
-    font-size: 12px;
-    padding:10px;
-    margin-left:5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
+  margin-right: 5px;
+  font-size: 12px;
+  padding:10px;
+  margin-left:5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 .d1 #dd1{
-    height:50px;
+  height:50px;
 
 }
 .d1 #dd2{
-    font-weight:bolder;
-    font-family:initial;
+  font-weight:bolder;
+  font-family:initial;
 }
 #e1{
-    width: 450px;
-    font-size: 20px;
-    height:30%;
+  width: 450px;
+  font-size: 20px;
+  height:30%;
 }

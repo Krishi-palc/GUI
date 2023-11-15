@@ -10,7 +10,7 @@
     justify-content: center;
     z-index: 1;
 }
-
+ 
 .modal_container {
     background-color: #fff;
     min-width: 400px;
@@ -26,7 +26,7 @@
     border-bottom:1px solid #ccc;
     font-family:initial;
     font-weight:bold;
-
+ 
 }
 .modal_content{
     flex:3;
