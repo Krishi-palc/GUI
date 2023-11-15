@@ -9,7 +9,7 @@ import Modal from "./Model";
 import ContextMenu from "./ContextMenu";
 import url1 from "./url1";
 import dagre from "dagre";
-
+import LoadingPage from './Loading';
 import "./app.css";
 
 let fid = 1001; // Filter id
@@ -403,6 +403,7 @@ const DnDFlow = () => {
   return (
     <div className="dndflow">
       <Sidebar />
+      
       <ReactFlowProvider>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
 
@@ -428,12 +429,15 @@ const DnDFlow = () => {
            
             zoomOnScroll={false}
             panOnScroll
+            minZoom={1}
+            maxZoom={1}
           >
-            <Controls/>
+            
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>horizontal layout</Panel>
+            <LoadingPage />
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
