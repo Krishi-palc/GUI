@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from "react";
-import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel } from "reactflow";
+import React, { useState, useRef, useCallback,useEffect  } from "react";
+import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel} from "reactflow";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
@@ -9,12 +9,14 @@ import Modal from "./Model";
 import ContextMenu from "./ContextMenu";
 import url1 from "./url1";
 import dagre from "dagre";
-
 import "./app.css";
+import LoadingPage from "./LoadingPage";
+import ResizableNodeSelected from "./ResizableNode";
 
 let fid = 1001; // Filter id
 const getFId = () => `${fid++}`;
-
+const nodeTypes = {
+  ResizableNodeSelected}
 const panOnDrag = [2, 2];
 
 const dagreGraph = new dagre.graphlib.Graph();
@@ -64,6 +66,29 @@ const DnDFlow = () => {
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
  
+   // OnLayout
+   const onLayout = useCallback(
+    (direction) => {
+        const { 
+          nodes: layoutedNodes,
+          edges: layoutedEdges
+        } = getLayoutedElements(nodes, edges, direction);
+
+        // Update the position of each node to start a few steps below its original position
+        const yOffset = 90; // Adjust this value to set the desired vertical offset
+        const xOffSet = 40;
+        const adjustedNodes = layoutedNodes.map((node) => (
+          {
+              ...node,
+             position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+          }
+        ));
+        
+        setNodes([...adjustedNodes]);
+        setEdges([...layoutedEdges]);
+    },
+    [nodes, edges]
+);
 
   // On Connect
   const onConnect = useCallback(
@@ -84,10 +109,12 @@ const DnDFlow = () => {
                   }
                 }, 
               eds))
+              
           }
+        
       }
     },
-    [edges,nodes]
+    [edges,nodes,onLayout]
   );
 
   // On Dragover 
@@ -104,17 +131,31 @@ const DnDFlow = () => {
         const type = event.dataTransfer.getData("application/reactflow");
         const id = event.dataTransfer.getData("id");
         const name = event.dataTransfer.getData("name");
-
+        console.log(type);
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
         }
-
+        let newNode;
         const position = reactFlowInstance.project({
-            x: event.clientX - reactFlowBounds.left,
-            y: event.clientY - reactFlowBounds.top
-        });
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top
+      });
+        if (type==="group"){
+          
+          newNode = {
+            id: id,
+            type,
+            position,
+            data: { label: `${name}` },
+            type:"ResizableNodeSelected",
+            draggable: true,
+            
+        };
 
+        }
+        else{
+      
         // Handler Position on nodes based on the PORT (Network | Tool)
         let sourcePos = null;
         let targetPos = null;
@@ -127,7 +168,7 @@ const DnDFlow = () => {
             type2 = "output";
         }
 
-        const newNode = {
+       newNode = {
             id: id,
             type,
             position,
@@ -138,7 +179,7 @@ const DnDFlow = () => {
             type1: "normal",
             draggable: false
         };
-
+        }
         setNodes((nds) => nds.concat(newNode));
 
         // Update the ethernet is used
@@ -280,7 +321,7 @@ const DnDFlow = () => {
         setshowModal(true);
         // Set the node for model
         setNodeId(node.id);
-
+        onLayout('LR'); 
         // Insert the Map
         const target1 = connectedEdges.filter((edge) => edge.source === node.id);
         const source1 = connectedEdges.filter((edge) => edge.target === node.id);
@@ -313,32 +354,30 @@ const DnDFlow = () => {
     }
   };
 
-  // OnLayout
-  const onLayout = useCallback(
-      (direction) => {
-          const { 
-            nodes: layoutedNodes,
-            edges: layoutedEdges
-          } = getLayoutedElements(nodes, edges, direction);
+ 
+        //retain data even after refreshing
+  useEffect(() => {
+    // Load data from local storage on component mount
+    const storedNodes = localStorage.getItem('flowchart-nodes');
+    const storedEdges = localStorage.getItem('flowchart-edges');
 
-          // Update the position of each node to start a few steps below its original position
-          const yOffset = 90; // Adjust this value to set the desired vertical offset
-          const xOffSet = 40;
-          const adjustedNodes = layoutedNodes.map((node) => (
-            {
-                ...node,
-               position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
-            }
-          ));
-          
-          setNodes([...adjustedNodes]);
-          setEdges([...layoutedEdges]);
-      },
-      [nodes, edges]
-  );
+    if (storedNodes && storedEdges) {
+      setNodes(JSON.parse(storedNodes));
+      setEdges(JSON.parse(storedEdges));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save data to local storage whenever nodes or edges change
+    localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+    localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  }, [nodes, edges]);
   
   return (
+    
+    
     <div className="dndflow">
+       
       <Sidebar />
       <ReactFlowProvider>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
@@ -362,16 +401,23 @@ const DnDFlow = () => {
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             panOnDrag={panOnDrag}
+            zoomOnScroll={false}
+            nodeTypes={nodeTypes}
+            panOnScroll
+            minZoom={1}
+            maxZoom={1}
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>horizontal layout</Panel>
+           <LoadingPage/>
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlowProvider>
+         
     </div>
   );
 };
