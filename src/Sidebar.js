@@ -76,7 +76,7 @@ export default () => {
         <hr></hr>
         <div
               className="dndnode"
-              onDragStart={(event) => onDragStart(event, '3000', "", "group")}
+              onDragStart={(event) => onDragStart(event, 'Group-1', 'Group', 'group')}
               draggable
             
         >

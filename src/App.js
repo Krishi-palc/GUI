@@ -17,6 +17,9 @@ import ResizableNodeSelected from "./ResizableNode";
 let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
 
+let gid = 1; // Filter id
+const getGId = () => `Group${gid++}`;
+
 const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
@@ -135,26 +138,29 @@ const DnDFlow = () => {
         const type = event.dataTransfer.getData("application/reactflow");
         let id = event.dataTransfer.getData("id");
         const name = event.dataTransfer.getData("name");
-        console.log(type);
 
-        id = createEid(id);
+        let newNode;
+
+        let sourcePos = null;
+        let targetPos = null;
+        let type2 = null;
+
         
-        while(nodes.some((node) => node.id === id)){
-          id = getEid(id);
-          console.log(id);
-        }
+
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
         }
-        let newNode;
+        
+        
+        
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top
-      });
-      let sourcePos = null;
-        let targetPos = null;
-        let type2 = null;
+        });
+      
+        
+
         if (position.x <= 490) {
             sourcePos = "right";
             type2 = "input";
@@ -162,7 +168,12 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "output";
         }
+
         if (type==="group"){
+            do{
+              id = getGId();
+            }while(nodes.some((node) => node.id === id));
+            console.log(id);
             newNode = {
               id: id,
               position,
@@ -175,6 +186,14 @@ const DnDFlow = () => {
           };
         }
         else{
+
+          //Create the id for all node Ethernet
+        id = createEid(id);
+        while(nodes.some((node) => node.id === id)){
+          id = getEid(id);
+          console.log(id);
+        }
+
             // Handler Position on nodes based on the PORT (Network | Tool)
             newNode = {
                   id: id,
@@ -187,7 +206,7 @@ const DnDFlow = () => {
                   draggable: false
             };
         }
-        
+
         setNodes((nds) => nds.concat(newNode));
 
         // Insert the node into db
@@ -342,34 +361,11 @@ const DnDFlow = () => {
     }
   };
 
- 
-        //retain data even after refreshing
-  // useEffect(() => {
-  //   // Load data from local storage on component mount
-  //   const storedNodes = localStorage.getItem('flowchart-nodes');
-  //   const storedEdges = localStorage.getItem('flowchart-edges');
-
-  //   if (storedNodes && storedEdges) {
-  //     setNodes(JSON.parse(storedNodes));
-  //     console.log(nodes);
-  //     setEdges(JSON.parse(storedEdges));
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   // Save data to local storage whenever nodes or edges change
-  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
-  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
-  // }, [nodes, edges]);
-
-
-
   useEffect(() => {
     // Load data from local storage on component mount
     const storedNodes = localStorage.getItem('flowchart-nodes');
     const storedEdges = localStorage.getItem('flowchart-edges');
-  
-    console.log('Stored Nodes:', storedNodes);
+
     if (storedNodes && storedEdges) {
       setNodes(JSON.parse(storedNodes));
       setEdges(JSON.parse(storedEdges));
