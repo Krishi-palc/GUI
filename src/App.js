@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback,useEffect } from "react";
-import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel } from "reactflow";
+import React, { useState, useRef, useCallback,useEffect  } from "react";
+import ReactFlow, { ReactFlowProvider, addEdge, useNodesState, useEdgesState, Controls, Panel} from "reactflow";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
@@ -9,11 +9,20 @@ import Modal from "./Model";
 import ContextMenu from "./ContextMenu";
 import url1 from "./url1";
 import dagre from "dagre";
-
 import "./app.css";
+import LoadingPage from "./LoadingPage";
+import ResizableNodeSelected from "./ResizableNode";
 
-let fid = 1001; // Filter id
+
+let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
+
+const createEid = (id) => `${id*1000}`;
+const getEid = (id) => `${++id}`;
+
+const nodeTypes = {
+  ResizableNodeSelected
+}
 
 const panOnDrag = [2, 2];
 
@@ -48,13 +57,12 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
       };
       return node;
   });
- 
   return { nodes, edges };
 };
 
 
 const DnDFlow = () => {
-  
+
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -63,7 +71,31 @@ const DnDFlow = () => {
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
+  const [connectionMade, setConnectionMade] = useState(false);
 
+   // OnLayout
+   const onLayout = useCallback(
+    (direction) => {
+        const {
+          nodes: layoutedNodes,
+          edges: layoutedEdges
+        } = getLayoutedElements(nodes, edges, direction);
+
+        // Update the position of each node to start a few steps below its original position
+        const yOffset = 90; // Adjust this value to set the desired vertical offset
+        const xOffSet = 40;
+        const adjustedNodes = layoutedNodes.map((node) => (
+          {
+              ...node,
+             position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+          }
+        ));
+       
+        setNodes([...adjustedNodes]);
+        setEdges([...layoutedEdges]);
+    },
+    [nodes, edges]
+);
   // On Connect
   const onConnect = useCallback(
     (params) => {
@@ -71,22 +103,22 @@ const DnDFlow = () => {
       const targetNode = nodes.filter((node) => node.id === params.target);
       const hasSource = edges.some((edge) => edge.source === params.source);
       const hasTarget = edges.some((edge) => edge.target === params.target);
+      
       if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
-          if(!hasSource && !hasTarget){ // Node has old connection 
+          //if(!hasSource && !hasTarget){ // Node has old connection 
               setEdges((eds) => addEdge(
                 {
                   ...params,
-                  type : "smoothstep",
-                  animated: true,
                   style: {
                     stroke: 'black'
                   }
                 }, 
               eds))
-          }
+          
+              setConnectionMade(true);
       }
     },
-    [edges,nodes]
+    [edges,nodes,onLayout]
   );
 
   // On Dragover 
@@ -101,21 +133,26 @@ const DnDFlow = () => {
         event.preventDefault();
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
         const type = event.dataTransfer.getData("application/reactflow");
-        const id = event.dataTransfer.getData("id");
+        let id = event.dataTransfer.getData("id");
         const name = event.dataTransfer.getData("name");
+        console.log(type);
 
+        id = createEid(id);
+        
+        while(nodes.some((node) => node.id === id)){
+          id = getEid(id);
+          console.log(id);
+        }
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
         }
-
+        let newNode;
         const position = reactFlowInstance.project({
-            x: event.clientX - reactFlowBounds.left,
-            y: event.clientY - reactFlowBounds.top
-        });
-
-        // Handler Position on nodes based on the PORT (Network | Tool)
-        let sourcePos = null;
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top
+      });
+      let sourcePos = null;
         let targetPos = null;
         let type2 = null;
         if (position.x <= 490) {
@@ -125,44 +162,33 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "output";
         }
-
-        const newNode = {
-            id: id,
-            type,
-            position,
-            sourcePosition: sourcePos,
-            targetPosition: targetPos,
-            data: { label: `${name}` },
-            type: type2,
-            type1: "normal",
-            draggable: false
-        };
-
+        if (type==="group"){
+            newNode = {
+              id: id,
+              position,
+              sourcePosition: sourcePos,
+              targetPosition: targetPos,
+              data: { label: `${name}` },
+              type:"ResizableNodeSelected",
+              type1: "normal",
+              draggable: true,
+          };
+        }
+        else{
+            // Handler Position on nodes based on the PORT (Network | Tool)
+            newNode = {
+                  id: id,
+                  position,
+                  sourcePosition: sourcePos,
+                  targetPosition: targetPos,
+                  data: { label: `${name}` },
+                  type: type2,
+                  type1: "normal",
+                  draggable: false
+            };
+        }
+        
         setNodes((nds) => nds.concat(newNode));
-
-        // Update the ethernet is used
-        fetch(`${url1}/Ethernet`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: `${id}`,
-                    name: `${name}`,
-                    usage: "yes"
-                }),
-            }).then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                console.log('Change Node usability : ', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
 
         // Insert the node into db
         fetch(`${url1}/Node`, {
@@ -205,38 +231,37 @@ const DnDFlow = () => {
       // Prevent native context menu from showing
       e.preventDefault();
       
-      //if (node.type1 === "filter") {
-        setMenu({
-          id: node.id,
-          name: node.data.label,
-          type1: node.type1,
-          node1: node,
-          edges1 : edges,
-          top: e.clientY,
-          left: e.clientX,
-          right: true,
-          bottom: false,
-          draggable: false,
-        });
-      },
-    //},
-    [setMenu ,edges]
+      setMenu({
+        id: node.id,
+        name: node.data.label,
+        type1: node.type1,
+        top: e.clientY,
+        left: e.clientX,
+        right: false,
+        bottom: false,
+        draggable: false
+      });
+    },
+    [setMenu]
   );
 
   // onclick the filter 
   const onclick = useCallback((event) => {
-    const ID1 = getFId();
-    const pos = 70 * ((ID1 % 1000)+1);
+    let ID1 = getFId();
+    while(nodes.some((node) => node.id === ID1)){
+      ID1 = getFId();
+    }
+
+    const pos = 60 * (ID1);
     const newnode = {
       id: ID1,
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      //data: { label: `Filter ${ID1 % 1000}` },
       data: { label: `${ID1}` },
       type1: "filter",
       type: "default",
-      draggable: false
+      // draggable: false
     };
 
     // Insert the node
@@ -270,9 +295,9 @@ const DnDFlow = () => {
     });
 
     setNodes((nds) => nds.concat(newnode));
-  }, []);
+  }, [nodes]);
 
-  //Click the filter node
+  // Click the filter node
   const onNodeClick = (event, node) => {
     if (node.type1 === "filter") {
       // Check the connection 
@@ -284,7 +309,7 @@ const DnDFlow = () => {
         setshowModal(true);
         // Set the node for model
         setNodeId(node.id);
-
+        onLayout('LR'); 
         // Insert the Map
         const target1 = connectedEdges.filter((edge) => edge.source === node.id);
         const source1 = connectedEdges.filter((edge) => edge.target === node.id);
@@ -317,89 +342,53 @@ const DnDFlow = () => {
     }
   };
 
-//  const onNodeClick = (event, node) => {
-//   if (node.type1 === "filter") {
-//     // Check the connection
-//     const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
+ 
+        //retain data even after refreshing
+  // useEffect(() => {
+  //   // Load data from local storage on component mount
+  //   const storedNodes = localStorage.getItem('flowchart-nodes');
+  //   const storedEdges = localStorage.getItem('flowchart-edges');
 
-//     // Collect all connected node IDs
-//     const connectedNodeIds = connectedEdges.reduce((acc, edge) => {
-//       acc.push(edge.source, edge.target);
-//       return acc;
-//     }, []);
+  //   if (storedNodes && storedEdges) {
+  //     setNodes(JSON.parse(storedNodes));
+  //     console.log(nodes);
+  //     setEdges(JSON.parse(storedEdges));
+  //   }
+  // }, []);
 
-//     // Remove the filter node and all connected nodes
-//     const newNodes = nodes.filter((n) => !connectedNodeIds.includes(n.id));
+  // useEffect(() => {
+  //   // Save data to local storage whenever nodes or edges change
+  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  // }, [nodes, edges]);
 
-//     // Remove all connected edges
-//     const newEdges = edges.filter((e) => !connectedEdges.includes(e));
 
-//     // Delete the Map associated with the filter
-//     fetch(`${url1}/Map/${node.id}`, {
-//       method: 'DELETE',
-//     })
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error('Network response was not ok');
-//       }
-//       return response.json();
-//     })
-//     .then((data) => {
-//       console.log('Deleted Map data:', data);
-//     })
-//     .catch((error) => {
-//       console.error('Error deleting Map:', error);
-//     });
 
-//     // Update the state to reflect the changes
-//     setNodes(newNodes);
-//     setEdges(newEdges);
-//   }
-// };
-
-  
-  // OnLayout
-  const onLayout = useCallback(
-      (direction) => {
-          const { 
-            nodes: layoutedNodes,
-            edges: layoutedEdges
-          } = getLayoutedElements(nodes, edges, direction);
-
-          // Update the position of each node to start a few steps below its original position
-          const yOffset = 90; // Adjust this value to set the desired vertical offset
-          const xOffSet = 40;
-          const adjustedNodes = layoutedNodes.map((node) => (
-            {
-                ...node,
-               position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
-            }
-          ));
-          
-          setNodes([...adjustedNodes]);
-          setEdges([...layoutedEdges]);
-      },
-      [nodes, edges]
-  );
-
-  //retain data even after refreshing
   useEffect(() => {
     // Load data from local storage on component mount
     const storedNodes = localStorage.getItem('flowchart-nodes');
     const storedEdges = localStorage.getItem('flowchart-edges');
-
+  
+    console.log('Stored Nodes:', storedNodes);
     if (storedNodes && storedEdges) {
       setNodes(JSON.parse(storedNodes));
       setEdges(JSON.parse(storedEdges));
     }
   }, []);
-
+  
   useEffect(() => {
     // Save data to local storage whenever nodes or edges change
     localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
     localStorage.setItem('flowchart-edges', JSON.stringify(edges));
   }, [nodes, edges]);
-  
+
+  // OnConnect Left Right Layout is there
+  useEffect(() => {
+    if (connectionMade) {
+      onLayout('LR');
+      setConnectionMade(false);
+    }
+  }, [connectionMade, onLayout]);
 
 
   return (
@@ -412,7 +401,6 @@ const DnDFlow = () => {
           <Modal close={setshowModal} nodeId={nodeId}/>
           )
         }
-
           <ReactFlow
             ref={ref}
             nodes={nodes}
@@ -427,19 +415,22 @@ const DnDFlow = () => {
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             panOnDrag={panOnDrag}
-           
             zoomOnScroll={false}
+            nodeTypes={nodeTypes}
             panOnScroll
+            minZoom={1}
+            maxZoom={1}
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
-            <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>horizontal layout</Panel>
+           <LoadingPage/>
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlowProvider>
+         
     </div>
   );
 };
