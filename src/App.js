@@ -12,7 +12,6 @@ import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
-import { useDrop } from 'react-dnd';
 let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
 
@@ -68,11 +67,12 @@ const DnDFlow = () => {
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
- 
+  const [connectionMade, setConnectionMade] = useState(false);
+
    // OnLayout
    const onLayout = useCallback(
     (direction) => {
-        const { 
+        const {
           nodes: layoutedNodes,
           edges: layoutedEdges
         } = getLayoutedElements(nodes, edges, direction);
@@ -86,13 +86,12 @@ const DnDFlow = () => {
              position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
           }
         ));
-        
+       
         setNodes([...adjustedNodes]);
         setEdges([...layoutedEdges]);
     },
     [nodes, edges]
 );
-
   // On Connect
   const onConnect = useCallback(
     (params) => {
@@ -100,25 +99,30 @@ const DnDFlow = () => {
       const targetNode = nodes.filter((node) => node.id === params.target);
       const hasSource = edges.some((edge) => edge.source === params.source);
       const hasTarget = edges.some((edge) => edge.target === params.target);
+      
       if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
-          if(!hasSource && !hasTarget){ // Node has old connection 
+          //if(!hasSource && !hasTarget){ // Node has old connection 
               setEdges((eds) => addEdge(
                 {
                   ...params,
-                  type : "smoothstep",
-                  animated: true,
                   style: {
                     stroke: 'black'
                   }
                 }, 
               eds))
-              
-          }
-        
+          
+              setConnectionMade(true);
       }
     },
     [edges,nodes,onLayout]
   );
+
+  useEffect(() => {
+    if (connectionMade) {
+      onLayout('LR');
+      setConnectionMade(false);
+    }
+  }, [connectionMade, onLayout]);
 
   // On Dragover 
   const onDragOver = useCallback((event) => {
@@ -142,8 +146,6 @@ const DnDFlow = () => {
           id = getEid(id);
           console.log(id);
         }
-        
-
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
@@ -172,10 +174,8 @@ const DnDFlow = () => {
             data: { label: `${name}` },
             type:"ResizableNodeSelected",
             draggable: true,
-            height:100
-            
+            height:100  
         };
-
         }
         else{
       
@@ -193,30 +193,6 @@ const DnDFlow = () => {
         };
         }
         setNodes((nds) => nds.concat(newNode));
-
-        // Update the ethernet is used
-        fetch(`${url1}/Ethernet`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: `${id}`,
-                    name: `${name}`,
-                    usage: "yes"
-                }),
-            }).then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                console.log('Change Node usability : ', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
 
         // Insert the node into db
         fetch(`${url1}/Node`, {
@@ -445,7 +421,6 @@ const DnDFlow = () => {
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
-            <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>horizontal layout</Panel>
            <LoadingPage/>
           </ReactFlow>
         </div>

@@ -78,7 +78,7 @@ export default () => {
               className="dndnode"
               onDragStart={(event) => onDragStart(event, '3000', "", "group")}
               draggable
-              onResize={true}
+            
         >
           Group
         </div>
