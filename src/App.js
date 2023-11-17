@@ -12,9 +12,13 @@ import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
-
-let fid = 1001; // Filter id
+import { useDrop } from 'react-dnd';
+let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
+
+const createEid = (id) => `${id*1000}`;
+const getEid = (id) => `${++id}`;
+
 const nodeTypes = {
   ResizableNodeSelected}
 const panOnDrag = [2, 2];
@@ -50,7 +54,6 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
       };
       return node;
   });
- 
   return { nodes, edges };
 };
 
@@ -129,9 +132,18 @@ const DnDFlow = () => {
         event.preventDefault();
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
         const type = event.dataTransfer.getData("application/reactflow");
-        const id = event.dataTransfer.getData("id");
+        let id = event.dataTransfer.getData("id");
         const name = event.dataTransfer.getData("name");
         console.log(type);
+
+        id = createEid(id);
+        
+        while(nodes.some((node) => node.id === id)){
+          id = getEid(id);
+          console.log(id);
+        }
+        
+
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
@@ -141,23 +153,7 @@ const DnDFlow = () => {
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top
       });
-        if (type==="group"){
-          
-          newNode = {
-            id: id,
-            type,
-            position,
-            data: { label: `${name}` },
-            type:"ResizableNodeSelected",
-            draggable: true,
-            
-        };
-
-        }
-        else{
-      
-        // Handler Position on nodes based on the PORT (Network | Tool)
-        let sourcePos = null;
+      let sourcePos = null;
         let targetPos = null;
         let type2 = null;
         if (position.x <= 490) {
@@ -167,7 +163,23 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "output";
         }
+        if (type==="group"){
+          
+          newNode = {
+            id: id,
+            type,
+            position,
+            data: { label: `${name}` },
+            type:"ResizableNodeSelected",
+            draggable: true,
+            height:100
+            
+        };
 
+        }
+        else{
+      
+        // Handler Position on nodes based on the PORT (Network | Tool)
        newNode = {
             id: id,
             type,
@@ -263,17 +275,20 @@ const DnDFlow = () => {
 
   // onclick the filter 
   const onclick = useCallback((event) => {
-    const ID1 = getFId();
-    const pos = 70 * ((ID1 % 1000)+1);
+    let ID1 = getFId();
+    while(nodes.some((node) => node.id === ID1)){
+      ID1 = getFId();
+    }
+    const pos = 60 * (ID1);
     const newnode = {
       id: ID1,
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { label: `Filter ${ID1 % 1000}` },
+      data: { label: `Filter ${ID1}` },
       type1: "filter",
       type: "default",
-      draggable: false
+      // draggable: false
     };
 
     // Insert the node
@@ -307,7 +322,7 @@ const DnDFlow = () => {
     });
 
     setNodes((nds) => nds.concat(newnode));
-  }, []);
+  }, [nodes]);
 
   // Click the filter node
   const onNodeClick = (event, node) => {
@@ -356,28 +371,48 @@ const DnDFlow = () => {
 
  
         //retain data even after refreshing
+  // useEffect(() => {
+  //   // Load data from local storage on component mount
+  //   const storedNodes = localStorage.getItem('flowchart-nodes');
+  //   const storedEdges = localStorage.getItem('flowchart-edges');
+
+  //   if (storedNodes && storedEdges) {
+  //     setNodes(JSON.parse(storedNodes));
+  //     console.log(nodes);
+  //     setEdges(JSON.parse(storedEdges));
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //   // Save data to local storage whenever nodes or edges change
+  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  // }, [nodes, edges]);
+
+
+
   useEffect(() => {
     // Load data from local storage on component mount
     const storedNodes = localStorage.getItem('flowchart-nodes');
     const storedEdges = localStorage.getItem('flowchart-edges');
-
+  
+    console.log('Stored Nodes:', storedNodes);
     if (storedNodes && storedEdges) {
       setNodes(JSON.parse(storedNodes));
       setEdges(JSON.parse(storedEdges));
     }
   }, []);
-
+  
   useEffect(() => {
     // Save data to local storage whenever nodes or edges change
     localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
     localStorage.setItem('flowchart-edges', JSON.stringify(edges));
   }, [nodes, edges]);
-  
+
+
+
   return (
-    
-    
     <div className="dndflow">
-       
       <Sidebar />
       <ReactFlowProvider>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
@@ -386,7 +421,6 @@ const DnDFlow = () => {
           <Modal close={setshowModal} nodeId={nodeId}/>
           )
         }
-
           <ReactFlow
             ref={ref}
             nodes={nodes}

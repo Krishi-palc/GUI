@@ -63,8 +63,9 @@ export default () => {
             <div
               className="dndnode"
               onDragStart={(event) => onDragStart(event, data1.id, data1.name, "default")}
-              draggable
               key={data1.id}
+              draggable
+             
             >
               {data1.name}
             </div>
