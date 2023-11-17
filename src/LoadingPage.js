@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import "./styles.css";
-
+import { Oval} from  'react-loader-spinner'
 const LoadingPage = () => {
   const [loading, setLoading] = useState(true);
  
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setLoading(false);
-    }, 3000);
+    }, 1000);
  
     return () => {
       // Clear the timeout to avoid memory leaks
@@ -17,16 +16,23 @@ const LoadingPage = () => {
  
   return (
     <div>
-      {loading ? (
-        <div id="yourDiv" className="loading-screen">
-          <h1 style={{textAlign:'center',marginTop:'10px'}}>Loading...</h1>
-          {/* You can add a loading spinner or any other content here */}
-        </div>
+    {loading ? (
+      <div id="yourDiv" className="loading-screen" >
+         <Oval height={500}
+                width={80}
+                color="black"
+                wrapperStyle={{}}
+                wrapperClass=""
+                visible={true}
+                ariaLabel='oval-loading'
+                secondaryColor="gray"
+                strokeWidth={2}
+                strokeWidthSecondary={2}/> 
+      </div>
       ) : (
         // Redirect or transition to the main content
         <div>
-           
-          {/* Your main content goes here */}
+         
         </div>
       )}
     </div>
