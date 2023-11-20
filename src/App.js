@@ -75,65 +75,117 @@ const DnDFlow = () => {
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
+  const [connectionMade, setConnectionMade] = useState(false);
+
+
+  // OnLayout
+  const onLayout = useCallback(
+    (direction) => {
+        const { 
+          nodes: layoutedNodes,
+          edges: layoutedEdges
+        } = getLayoutedElements(nodes, edges, direction);
+
+        // Update the position of each node to start a few steps below its original position
+        const yOffset = 90; // Adjust this value to set the desired vertical offset
+        const xOffSet = 40;
+        const adjustedNodes = layoutedNodes.map((node) => (
+          {
+              ...node,
+             position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+          }
+        ));
+        
+        setNodes([...adjustedNodes]);
+        setEdges([...layoutedEdges]);
+    },
+    [nodes, edges]
+);
 
   // On Connect
-  // const onConnect = useCallback(
-  //   (params) => {
-  //     const sourceNode = nodes.filter((node) => node.id === params.source);
-  //     const targetNode = nodes.filter((node) => node.id === params.target);
-  //     const hasSource = edges.some((edge) => edge.source === params.source);
-  //     const hasTarget = edges.some((edge) => edge.target === params.target);
-  //     if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
-  //         // if(!hasSource && !hasTarget){ // Node has old connection 
-  //             setEdges((eds) => addEdge(
-  //               {
-  //                 ...params,
-                 
-  //                 //animated: true,
-  //                 style: {
-  //                   stroke: 'black'
-  //                 }
-  //               }, 
-  //             eds))
-  //         // }
-  //     }
-  //   },
-  //   [edges,nodes]
-  // );
+  const onConnect = useCallback(
+    (params) => {
+      const sourceNode = nodes.filter((node) => node.id === params.source);
+      const targetNode = nodes.filter((node) => node.id === params.target);
+      const hasSource = edges.some((edge) => edge.source === params.source);
+      const hasTarget = edges.some((edge) => edge.target === params.target);
+      
+      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
+          //if(!hasSource && !hasTarget){ // Node has old connection 
+              setEdges((eds) => addEdge(
+                {
+                  ...params,
+                  style: {
+                    stroke: 'black'
+                  }
+                }, 
+              eds))
+          
+              setConnectionMade(true);
+      }
+    },
+    [edges,nodes,onLayout]
+  );
 
 
-// On Connect
-const onConnect = useCallback(
-  (params) => {
-    const sourceNode = nodes.find((node) => node.id === params.source);
-    const targetNode = nodes.find((node) => node.id === params.target);
+// // On Connect
+// const onConnect = useCallback(
+//   (params) => {
+//     const sourceNode = nodes.find((node) => node.id === params.source);
+//     const targetNode = nodes.find((node) => node.id === params.target);
 
-    if (sourceNode && targetNode && sourceNode.type1 !== targetNode.type1) {
-      const existingConnections = edges.filter(
-        (edge) => edge.target === targetNode.id
-      );
+//     if (sourceNode && targetNode && sourceNode.type1 !== targetNode.type1) {
+//       const existingConnections = edges.filter(
+//         (edge) => edge.target === targetNode.id
+//       );
 
-      const port =
-        existingConnections.length > 0
-          ? existingConnections[0].port
-          : targetNode.port; // Use the existing port or the initial port
+//       const port =
+//         existingConnections.length > 0
+//           ? existingConnections[0].port
+//           : targetNode.port; // Use the existing port or the initial port
 
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            style: {
-              stroke: 'black',
-            },
-            port, // Pass the port associated with the filter node
-          },
-          eds
-        )
-      );
-    }
-  },
-  [edges, nodes]
-);
+//       setEdges((eds) =>
+//         addEdge(
+//           {
+//             ...params,
+//             style: {
+//               stroke: 'black',
+//             },
+//             port, // Pass the port associated with the filter node
+//           },
+//           eds
+//         )
+//       );
+
+//       // Update the leftConnections or rightConnections based on the side of the connection
+//       if (params.targetPosition === 'left') {
+//         setNodes((nds) =>
+//           nds.map((node) =>
+//             node.id === targetNode.id
+//               ? { ...node, leftConnections: node.leftConnections + 1 }
+//               : node
+//           )
+//         );
+//       } else if (params.targetPosition === 'right') {
+//         setNodes((nds) =>
+//           nds.map((node) =>
+//             node.id === targetNode.id
+//               ? { ...node, rightConnections: node.rightConnections + 1 }
+//               : node
+//           )
+//         );
+//       }
+//     }
+//   },
+//   [edges, nodes]
+// );
+
+useEffect(() => {
+  if (connectionMade) {
+    onLayout('LR');
+    setConnectionMade(false);
+  }
+}, [connectionMade, onLayout]);
 
   // On Dragover 
   const onDragOver = useCallback((event) => {
@@ -188,7 +240,7 @@ const onConnect = useCallback(
             data: { label: `${name}` },
             type: "ResizeNode",
             type1: "normal",
-            port: getFId(), // Use a unique port for each filter node          
+                    
         };
         }
         else{
@@ -297,11 +349,16 @@ const onConnect = useCallback(
       sourcePosition: 'right',
       targetPosition: 'left',
       //data: { label: `Filter ${ID1 % 1000}` },
-      data: { label: `${ID1}` },
+      data: { label: `Filter ${ID1}` },
       type1: "filter",
       type: "default",
       draggable: false,
+      // leftConnection,  // Initialize the left side connections count
+      // rightConnections, // Initialize the right side connections count
       };
+
+    //   setNodes((nds) => nds.concat(newnode));
+    // }, []);
 
     // Insert the node
     fetch(`${url1}/Node`, {
@@ -422,30 +479,7 @@ const onConnect = useCallback(
 // };
 
   
-  // OnLayout
-  const onLayout = useCallback(
-      (direction) => {
-          const { 
-            nodes: layoutedNodes,
-            edges: layoutedEdges
-          } = getLayoutedElements(nodes, edges, direction);
-
-          // Update the position of each node to start a few steps below its original position
-          const yOffset = 90; // Adjust this value to set the desired vertical offset
-          const xOffSet = 40;
-          const adjustedNodes = layoutedNodes.map((node) => (
-            {
-                ...node,
-               position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
-            }
-          ));
-          
-          setNodes([...adjustedNodes]);
-          setEdges([...layoutedEdges]);
-      },
-      [nodes, edges]
-  );
-
+  
   //retain data even after refreshing
   useEffect(() => {
     // Load data from local storage on component mount
