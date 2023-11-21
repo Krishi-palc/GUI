@@ -1,9 +1,9 @@
 import React from 'react';
 import "./Model.css"
 import { Button } from 'react-bootstrap';
-import Tab from "./Tab";
+import EthPopup from './EthPopup';
 
-function Modal({close , nodeId}) {
+function EthModal({close , nodeId}) {
     // console.log("Nodes: "+nodes);
     
     return (
@@ -11,16 +11,16 @@ function Modal({close , nodeId}) {
             <div className="modal_container">
                 <div className='modal_close' onClick={()=>close(false)}>&times;</div>
                 <div className="modal_title">
-                    <h4>Dynamic Filter</h4>
+                    <h4>Ethernet</h4>
                 </div> 
                 <div className="modal_content">
-                    <Tab nodeId={nodeId}/>
+                   <EthPopup/>
                 </div>
                 <div className="modal_footer">
-                   <button className='my-button'>Delete</button>
+                   <button className='my-button'>Save</button>
                 </div>
             </div>
         </div>
     );
 }
-export default Modal;
+export default EthModal;

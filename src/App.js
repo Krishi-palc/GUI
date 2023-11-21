@@ -12,14 +12,21 @@ import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
+import EthModal from "./EthModal";
+
 let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
+
+let gid = 1; // Filter id
+const getGId = () => `Group${gid++}`;
 
 const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
 const nodeTypes = {
-  ResizableNodeSelected}
+  ResizableNodeSelected
+}
+
 const panOnDrag = [2, 2];
 
 const dagreGraph = new dagre.graphlib.Graph();
@@ -58,12 +65,13 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 
 
 const DnDFlow = () => {
-  
+
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
+  const [showEthModal, setshowEthModal] = useState(false);
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
@@ -95,7 +103,9 @@ const DnDFlow = () => {
   // On Connect
   const onConnect = useCallback(
     (params) => {
+      console.log(params);
       const sourceNode = nodes.filter((node) => node.id === params.source);
+      console.log(sourceNode);
       const targetNode = nodes.filter((node) => node.id === params.target);
       const hasSource = edges.some((edge) => edge.source === params.source);
       const hasTarget = edges.some((edge) => edge.target === params.target);
@@ -117,13 +127,6 @@ const DnDFlow = () => {
     [edges,nodes,onLayout]
   );
 
-  useEffect(() => {
-    if (connectionMade) {
-      onLayout('LR');
-      setConnectionMade(false);
-    }
-  }, [connectionMade, onLayout]);
-
   // On Dragover 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -138,26 +141,23 @@ const DnDFlow = () => {
         const type = event.dataTransfer.getData("application/reactflow");
         let id = event.dataTransfer.getData("id");
         const name = event.dataTransfer.getData("name");
-        console.log(type);
 
-        id = createEid(id);
-        
-        while(nodes.some((node) => node.id === id)){
-          id = getEid(id);
-          console.log(id);
-        }
+        let newNode;
+
+        let sourcePos = null;
+        let targetPos = null;
+        let type2 = null;
+
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
         }
-        let newNode;
+        
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top
-      });
-      let sourcePos = null;
-        let targetPos = null;
-        let type2 = null;
+        });
+      
         if (position.x <= 490) {
             sourcePos = "right";
             type2 = "input";
@@ -165,64 +165,46 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "output";
         }
+
         if (type==="group"){
-          
-          newNode = {
-            id: id,
-            type,
-            position,
-            data: { label: `${name}` },
-            type:"ResizableNodeSelected",
-            draggable: true,
-            height:100  
-        };
+            do{
+              id = getGId();
+            }while(nodes.some((node) => node.id === id));
+            console.log(id);
+            newNode = {
+              id: id,
+              position,
+              sourcePosition: sourcePos,
+              targetPosition: targetPos,
+              data: { label: `${name}` },
+              type:"ResizableNodeSelected",
+              type1: "normal",
+              draggable: true,
+          };
         }
         else{
-      
-        // Handler Position on nodes based on the PORT (Network | Tool)
-       newNode = {
-            id: id,
-            type,
-            position,
-            sourcePosition: sourcePos,
-            targetPosition: targetPos,
-            data: { label: `${name}` },
-            type: type2,
-            type1: "normal",
-            draggable: false
-        };
+
+          //Create the id for all node Ethernet
+        id = createEid(id);
+        while(nodes.some((node) => node.id === id)){
+          id = getEid(id);
+          console.log(id);
         }
+            // Handler Position on nodes based on the PORT (Network | Tool)
+            newNode = {
+                  id: id,
+                  position,
+                  sourcePosition: sourcePos,
+                  targetPosition: targetPos,
+                  data: { label: `${name}` },
+                  type: type2,
+                  type1: "normal",
+                  draggable: false
+            };
+        }
+
         setNodes((nds) => nds.concat(newNode));
 
-        // Insert the node into db
-        fetch(`${url1}/Node`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: newNode.id,
-                    x: newNode.position.x,
-                    y: newNode.position.y,
-                    sourcePosition: newNode.sourcePosition,
-                    targetPosition: newNode.targetPosition,
-                    name: newNode.data.label,
-                    type1: newNode.type1,
-                    type: newNode.type
-                }),
-            })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                // console.log('Updated data:', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
     },
     [reactFlowInstance, nodes, setNodes]
   );
@@ -234,6 +216,8 @@ const DnDFlow = () => {
     (e, node) => {
       // Prevent native context menu from showing
       e.preventDefault();
+      console.log(e);
+      console.log(node);
       
       setMenu({
         id: node.id,
@@ -249,54 +233,25 @@ const DnDFlow = () => {
     [setMenu]
   );
 
+
   // onclick the filter 
   const onclick = useCallback((event) => {
     let ID1 = getFId();
     while(nodes.some((node) => node.id === ID1)){
       ID1 = getFId();
     }
+
     const pos = 60 * (ID1);
     const newnode = {
       id: ID1,
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { label: `Filter ${ID1}` },
+      data: { label: `${ID1}` },
       type1: "filter",
       type: "default",
       // draggable: false
     };
-
-    // Insert the node
-    fetch(`${url1}/Node`, {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-          id: newnode.id,
-          x: newnode.position.x,
-          y: newnode.position.y,
-          sourcePosition: newnode.sourcePosition,
-          targetPosition: newnode.targetPosition,
-          name: newnode.data.label,
-          type1: newnode.type1,
-          type: newnode.type
-      }),
-    })
-    .then((response) => {
-          if (!response.ok) {
-              throw new Error('Network response was not ok');
-          }
-          return response.json();
-    })
-    .then((data) => {
-          // console.log('Updated data:', data);
-    })
-    .catch((error) => {
-          console.error('Error:', error);
-    });
-
     setNodes((nds) => nds.concat(newnode));
   }, [nodes]);
 
@@ -311,68 +266,24 @@ const DnDFlow = () => {
       if (hasLeftConnection && hasRightConnection) {
         setshowModal(true);
         // Set the node for model
+       
         setNodeId(node.id);
         onLayout('LR'); 
         // Insert the Map
         const target1 = connectedEdges.filter((edge) => edge.source === node.id);
         const source1 = connectedEdges.filter((edge) => edge.target === node.id);
-
-        fetch(`${url1}/Map`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id : node.id,
-                source : source1[0].source,
-                destination : target1[0].target,
-                description : node.data.label
-            }),
-        })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log('Updated data:', data);
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-          });
       } 
     }
+    else{
+      setshowEthModal(true);
+    }
   };
-
- 
-        //retain data even after refreshing
-  // useEffect(() => {
-  //   // Load data from local storage on component mount
-  //   const storedNodes = localStorage.getItem('flowchart-nodes');
-  //   const storedEdges = localStorage.getItem('flowchart-edges');
-
-  //   if (storedNodes && storedEdges) {
-  //     setNodes(JSON.parse(storedNodes));
-  //     console.log(nodes);
-  //     setEdges(JSON.parse(storedEdges));
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   // Save data to local storage whenever nodes or edges change
-  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
-  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
-  // }, [nodes, edges]);
-
-
 
   useEffect(() => {
     // Load data from local storage on component mount
     const storedNodes = localStorage.getItem('flowchart-nodes');
     const storedEdges = localStorage.getItem('flowchart-edges');
-  
-    console.log('Stored Nodes:', storedNodes);
+
     if (storedNodes && storedEdges) {
       setNodes(JSON.parse(storedNodes));
       setEdges(JSON.parse(storedEdges));
@@ -385,7 +296,13 @@ const DnDFlow = () => {
     localStorage.setItem('flowchart-edges', JSON.stringify(edges));
   }, [nodes, edges]);
 
-
+  // OnConnect Left Right Layout is there
+  useEffect(() => {
+    if (connectionMade) {
+      onLayout('LR');
+      setConnectionMade(false);
+    }
+  }, [connectionMade, onLayout]);
 
   return (
     <div className="dndflow">
@@ -395,6 +312,10 @@ const DnDFlow = () => {
 
         { showModal && (
           <Modal close={setshowModal} nodeId={nodeId}/>
+          )
+        }
+        { showEthModal && (
+          <EthModal close={setshowEthModal} nodeId={nodeId}/>
           )
         }
           <ReactFlow
