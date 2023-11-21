@@ -13,6 +13,8 @@ import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
 
+import EthModal from "./EthModal";
+
 
 let fid = 1; // Filter id
 const getFId = () => `${fid++}`;
@@ -100,6 +102,7 @@ const DnDFlow = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
+  const [showEthModal, setshowEthModal] = useState(false);
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
@@ -387,7 +390,11 @@ const DnDFlow = () => {
           .catch((error) => {
             console.error('Error:', error);
           });
-      } 
+        } 
+    }
+    else{
+      setshowEthModal(true);
+      setNodeId(Math.round(node.id/1000));
     }
   };
 
@@ -449,6 +456,10 @@ const DnDFlow = () => {
 
         { showModal && (
           <Modal close={setshowModal} nodeId={nodeId}/>
+          )
+        }
+        { showEthModal && (
+          <EthModal close={setshowEthModal} nodeId={nodeId}/>
           )
         }
           <ReactFlow

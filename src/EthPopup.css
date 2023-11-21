@@ -1,0 +1,6 @@
+.b2 input,
+.b1 input {
+  font-size: 16px; /* Change the font size as needed */
+  width: 200px; /* Change the width as needed */
+  margin-right: 10px;
+}
