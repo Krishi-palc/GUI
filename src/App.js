@@ -17,7 +17,9 @@ import EthModal from "./EthModal";
 
 
 let fid = 1; // Filter id
+const createFid = () => { fid = 1};
 const getFId = () => `${fid++}`;
+const getFId1 = () => `${fid}`;
 
 let gid = 1; // Filter id
 const getGId = () => `Group${gid++}`;
@@ -119,23 +121,19 @@ const DnDFlow = () => {
       let hasSingleSource = false;
       if(sourceNode[0].type1==="filter"){
         const FilterEdges = edges.filter((edge) => (edge.source === sourceNode[0].id) || (edge.target=== sourceNode[0].id));
-        // const f = FilterEdges.filter((edge) => (Math.round(edge.source/1000) === Math.round(targetNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(targetNode[0].id/1000)));
         hasSingleTarget = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(targetNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(targetNode[0].id/1000)));
-        // console.log(FilterEdges);
-        // console.log(f);
       }
       else if(targetNode[0].type1==="filter"){
         const FilterEdges = edges.filter((edge) => (edge.source === targetNode[0].id) || (edge.target=== targetNode[0].id));
-        // const f = FilterEdges.filter((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
         hasSingleTarget = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
-        // console.log(FilterEdges);
-        // console.log(f);
       }
-          
-      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
 
-        const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
-        const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
+      const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
+      const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
+
+      console.log(edges);
+
+      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
         if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
           if(!hasSingleSource && !hasSingleTarget){
             setEdges((eds) => addEdge(
@@ -145,7 +143,46 @@ const DnDFlow = () => {
                   stroke: 'black'
                 }
               }, 
-            eds))
+            eds));
+            setConnectionMade(true);
+          }
+        }
+      }
+      else{ // Same type auto connect
+        if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
+          if(!hasSingleSource && !hasSingleTarget){
+            onclick();
+            let id = getFId1() - 1;
+            console.log(id);
+            const params1 = {
+              "source" : params.source,
+              "sourceHandle" : params.sourceHandle,
+              "target" : `${id}`,
+              "targetHandle" : params.targetHandle
+            };
+
+            const params2 = {
+              "source" : `${id}`,
+              "sourceHandle" : params.sourceHandle,
+              "target" : params.target,
+              "targetHandle" : params.targetHandle
+            };
+            setEdges((eds) => addEdge(
+              {
+                ...params1,
+                style: {
+                  stroke: 'black'
+                }
+              }, 
+            eds));
+            setEdges((eds) => addEdge(
+              {
+                ...params2,
+                style: {
+                  stroke: 'black'
+                }
+              }, 
+            eds));
             setConnectionMade(true);
           }
         }
@@ -289,12 +326,13 @@ const DnDFlow = () => {
 
   // onclick the filter 
   const onclick = useCallback((event) => {
+    createFid();
     let ID1 = getFId();
     while(nodes.some((node) => node.id === ID1)){
       ID1 = getFId();
     }
 
-    const pos = 60 * (ID1);
+    const pos = 90 * (ID1);
     const newnode = {
       id: ID1,
       position: { x: 490, y: pos },
@@ -440,12 +478,12 @@ const DnDFlow = () => {
   // }, [nodes, edges]);
 
   // OnConnect Left Right Layout is there
-  // useEffect(() => {
-  //   if (connectionMade) {
-  //     onLayout('LR');
-  //     setConnectionMade(false);
-  //   }
-  // }, [connectionMade, onLayout]);
+  useEffect(() => {
+    if (connectionMade) {
+      onLayout('LR');
+      setConnectionMade(false);
+    }
+  }, [connectionMade, onLayout]);
 
 
   return (
@@ -485,7 +523,9 @@ const DnDFlow = () => {
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
-            <Panel position="top-center" id='z2' onClick={onclick} >Filter <img src="plus.png" alt="Mapping"></img></Panel>
+            <Panel position="top-center" id='z2' onClick={onclick} >Filter 
+            {/*<!--img src="plus.png" alt="Mapping"></img-->*/}
+            </Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel>
            <LoadingPage/>
           </ReactFlow>
