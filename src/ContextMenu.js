@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useReactFlow } from "reactflow";
-
 import "./ContextMenu.css";
+import url1 from "./url1";
 
 export default function ContextMenu({
   id,
@@ -18,29 +18,27 @@ export default function ContextMenu({
   const deleteNode = useCallback(() => {
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
     setEdges((edges) => edges.filter((edge) => edge.source !== id && edge.target !== id)); // Filter out edges related to the deleted node
-  
-    if(type1 == "normal"){
-        // Change the infoemation of deleted normal node
-        fetch(`http://localhost:8080/Ethernet`, {
-        method: 'PUT',
+      
+    fetch(`${url1}/Node/${id}`, {
+        method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
+            'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: `${id}`, name: `${name}`, usage: "no" }),
       })
         .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            // Parse the JSON here and return the result
+            return response;
         })
         .then((data) => {
-          console.log('Updated data:', data);
+            // Now you can use the parsed JSON data
+            // console.log("Delete : "+id);
         })
         .catch((error) => {
-          console.error('Error:', error);
+            console.error('Error:', error);
         });
-    }
   }, [id, name, type1, setNodes, setEdges]);
 
   return (

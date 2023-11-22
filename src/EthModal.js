@@ -1,6 +1,5 @@
 import React from 'react';
 import "./Model.css"
-import { Button } from 'react-bootstrap';
 import EthPopup from './EthPopup';
 
 function EthModal({close , nodeId}) {
