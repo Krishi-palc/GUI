@@ -98,11 +98,11 @@ const ContextMenu = ({ id, name, type1, top, left, right, bottom, onClick }) => 
 
   return (
     <div className="context-menu" style={{ top, left, right, bottom }}>
-      {right && (
+      
         <div>
           <div onClick={deleteNode}>Delete</div>
         </div>
-      )}
+    
     </div>
   );
 };
