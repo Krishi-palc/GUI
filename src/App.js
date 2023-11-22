@@ -12,9 +12,7 @@ import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
-
 import EthModal from "./EthModal";
-
 
 let fid = 1; // Filter id
 const createFid = () => { fid = 1};
@@ -109,7 +107,7 @@ const DnDFlow = () => {
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
   const [connectionMade, setConnectionMade] = useState(false);
-  const [nodeEvent, setNodeEvent] = useState(null);
+  
        // OnLayout
        const onLayout = useCallback(
         (direction) => {
@@ -454,7 +452,7 @@ const DnDFlow = () => {
   
       if (hasLeftConnection && hasRightConnection) {
         setshowModal(true);
-        setNodeEvent({ event,edges,nodes,id,setNodes,setEdges});
+      
         // Set the node for model
         setNodeId(node.id);
         // onLayout('LR'); 

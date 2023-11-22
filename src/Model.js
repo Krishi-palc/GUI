@@ -5,7 +5,7 @@ function Modal({close, nodeId, onDelete}) {
 
     const handleTabChange = (tab) => {
       setActiveTab(tab);
-      console.log(activeTab);
+     
     };
     return (
         <div className="modal">
