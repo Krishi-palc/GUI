@@ -73,7 +73,7 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 
 const DnDFlow = () => {
 
-  let initialNodes = [];
+  const [initialNodes, setinitialNodes] = useState([]);
   const GetNodes = async () => {
     try {
       const url = `${url1}/Node`;
@@ -131,7 +131,7 @@ const DnDFlow = () => {
       const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
       const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
 
-      console.log(edges);
+      // console.log(edges);
 
       if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
         if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
@@ -153,7 +153,7 @@ const DnDFlow = () => {
           if(!hasSingleSource && !hasSingleTarget){
             onclick();
             let id = getFId1() - 1;
-            console.log(id);
+            // console.log(id);
             const params1 = {
               "source" : params.source,
               "sourceHandle" : params.sourceHandle,
@@ -423,7 +423,7 @@ const DnDFlow = () => {
             return response.json();
           })
           .then((data) => {
-            console.log('Updated data:', data);
+            // console.log('Updated data:', data);
           })
           .catch((error) => {
             console.error('Error:', error);
@@ -484,6 +484,50 @@ const DnDFlow = () => {
       setConnectionMade(false);
     }
   }, [connectionMade, onLayout]);
+  const onDelete = useCallback((nodeId) => {
+    // Find the filter node to be deleted
+    const filterNode = nodes.find((node) => node.id === nodeId);
+   
+    if (!filterNode) {
+      console.error(`Filter node with id ${nodeId} not found`);
+      return;
+    }
+   
+    // Find all connected edges to the filter node
+    const connectedEdges = edges.filter(
+      (edge) => edge.source === nodeId || edge.target === nodeId
+    );
+   
+    // Find all connected nodes to the filter node
+    const connectedNodes = connectedEdges.reduce((acc, edge) => {
+      const sourceNode = nodes.find((node) => node.id === edge.source);
+      const targetNode = nodes.find((node) => node.id === edge.target);
+   
+      if (sourceNode) {
+        acc.push(sourceNode);
+      }
+   
+      if (targetNode) {
+        acc.push(targetNode);
+      }
+   
+      return acc;
+    }, []);
+   
+    // Update nodes and edges by removing the filter node and connected nodes/edges
+    setNodes((prevNodes) =>
+      prevNodes.filter((node) => !connectedNodes.includes(node) && node.id !== nodeId)
+    );
+   
+    setEdges((prevEdges) =>
+      prevEdges.filter((edge) => !connectedEdges.includes(edge))
+    );
+   
+    // Make API calls or perform any additional actions to delete data from your server
+   
+    // Close the modal
+    setshowModal(false);
+  }, [nodes, edges]);
 
 
   return (
@@ -492,10 +536,9 @@ const DnDFlow = () => {
       <ReactFlowProvider>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
 
-        { showModal && (
-          <Modal close={setshowModal} nodeId={nodeId}/>
-          )
-        }
+        {showModal && (
+            <Modal close={setshowModal} nodeId={nodeId} onDelete={onDelete} />
+        )}
         { showEthModal && (
           <EthModal close={setshowEthModal} nodeId={nodeId}/>
           )
