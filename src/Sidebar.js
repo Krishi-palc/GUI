@@ -54,14 +54,13 @@ export default () => {
      
       <div id="a1">
         <h4 id='a2'>Available Interfaces</h4>
-        <hr></hr>
       </div>
  
       <div className="panel1">
-        <div>
+        <div id="r">
           {data.map((data1) => (
             <div
-              className="dndnode"
+              className="dndnode" id="r1"
               onDragStart={(event) => onDragStart(event, data1.id, data1.name, "default")}
               key={data1.id}
               draggable
@@ -75,11 +74,9 @@ export default () => {
       <div>
         <hr></hr>
         <div
-              className="dndnode"
+              className="dndnode"id="r2" 
               onDragStart={(event) => onDragStart(event, 'Group-1', 'Group', 'group')}
-              draggable
-            
-        >
+              draggable>
           Group
         </div>
       </div>

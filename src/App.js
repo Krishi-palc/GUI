@@ -578,10 +578,10 @@ const DnDFlow = () => {
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
-            <Panel position="top-center" id='z2' onClick={onclick} >Filter 
+            <Panel position="top-center" id='z2' onClick={onclick} >Filter
             {/*<!--img src="plus.png" alt="Mapping"></img-->*/}
             </Panel>
-            <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel>
+            {/* <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel> */}
            <LoadingPage/>
           </ReactFlow>
         </div>
