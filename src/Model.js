@@ -1,26 +1,34 @@
-import React from 'react';
-import "./Model.css"
-import { Button } from 'react-bootstrap';
+import Tab  from "./Tab";
+import React, { useState} from "react";
+function Modal({close, nodeId, onDelete}) {
+    const [activeTab, setActiveTab] = useState('general');
 
-import Tab from "./Tab";
-
-function Modal({close , nodeId}) {
-    // console.log("Node Id in Modal : "+nodeId);
+    const handleTabChange = (tab) => {
+      setActiveTab(tab);
+     
+    };
     return (
         <div className="modal">
             <div className="modal_container">
                 <div className='modal_close' onClick={()=>close(false)}>&times;</div>
                 <div className="modal_title">
                     <h4>Dynamic Filter</h4>
-                </div> 
+                </div>
                 <div className="modal_content">
-                    <Tab nodeId={nodeId}/>
+                    <Tab nodeId={nodeId} onTabChange={handleTabChange}/>
                 </div>
                 <div className="modal_footer">
-                   <button className='my-button'>Save</button>
+                   
+                    {activeTab === 'general' && ( <button className="my-button" onClick={() => onDelete(nodeId)}>
+                        Delete
+                    </button>)}
+                    {activeTab === 'filter' && ( <button className="my-button" onClick={() => console.log('Save')}>
+                        Save
+                     </button>)}
+                    
                 </div>
             </div>
         </div>
     );
-}
+}  
 export default Modal;
