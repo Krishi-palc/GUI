@@ -1,0 +1,16 @@
+#a1{
+    background:white;
+    color:black;
+    border: 2px solid black;
+    border-radius:5px;
+}
+#a2{
+    text-align:center;
+    padding-right:10px;
+    /* font-family:cursive; */
+}
+img{
+    width: 90px;
+    height:40px;
+    padding-left:15px;
+}

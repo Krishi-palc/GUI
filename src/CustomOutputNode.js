@@ -1,11 +1,12 @@
 import React, { memo } from 'react';
 import { Handle} from 'reactflow';
+import "./customoutput.css";
 function CustomInputNode({ data }) {
     return (
-        <div style={{ background: 'white', color: 'black', border: '2px solid black',borderRadius:'5px' }}>
-            <div style={{  textAlign: 'center', paddingRight: '10px',fontFamily:'cursive'}}>
+        <div id="a1">
+            <div id="a2">
                 {data.image && (
-                  <img src={data.image} alt="custom" style={{ width: '90px', height: '40px',paddingLeft:'15px'}} />
+                  <img src={data.image} alt="custom" />
                 )}
                 {data.name}
              </div>

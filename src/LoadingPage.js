@@ -18,9 +18,10 @@ const LoadingPage = () => {
     <div>
     {loading ? (
       <div id="yourDiv" className="loading-screen" >
+        
          <Oval height={500}
                 width={80}
-                color="black"
+                color="#4d3319"
                 wrapperStyle={{}}
                 wrapperClass=""
                 visible={true}
@@ -28,6 +29,7 @@ const LoadingPage = () => {
                 secondaryColor="gray"
                 strokeWidth={2}
                 strokeWidthSecondary={2}/> 
+                
       </div>
       ) : (
         // Redirect or transition to the main content

@@ -575,7 +575,7 @@ const DnDFlow = () => {
             maxZoom={1}
             className="touchdevice-flow"
           >
-            <Controls/>
+            {/* <Controls/> */}
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="top-center" id='z2' onClick={onclick} >Filter
