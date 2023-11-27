@@ -44,7 +44,7 @@ const panOnDrag = [2, 2];
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
  
-const nodeWidth = 300;
+const nodeWidth = 250;
 const nodeHeight = 10;
  
 // For Dagre Tree Layout
@@ -67,8 +67,8 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
       node.targetPosition = isHorizontal ? "left" : "top";
       node.sourcePosition = isHorizontal ? "right" : "bottom";
       node.position = {
-          x: nodeWithPosition.x - nodeWidth / 2,
-          y: nodeWithPosition.y - nodeHeight / 2
+          x: nodeWithPosition.x - nodeWidth /2,
+          y: nodeWithPosition.y - nodeHeight /2
       };
       return node;
   });
@@ -320,7 +320,7 @@ const DnDFlow = () => {
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { name: `${ID1}`, job:"hello", image:`${process.env.PUBLIC_URL}etherner.jpg`},
+      data: { name: `Filter ${ID1}`, job:"hello", image:`${process.env.PUBLIC_URL}etherner.jpg`},
       type1: "filter",
       type: "CustomFilterNode",
       // draggable: false
@@ -395,7 +395,7 @@ const DnDFlow = () => {
                 id : node.id,
                 from : sources,
                 to : targets,
-                description : "Filter "+node.data.label
+                description : "Filter "+node.id
             }),
         })
         .then((response) => {
@@ -544,6 +544,7 @@ const DnDFlow = () => {
             panOnScroll
             minZoom={1}
             maxZoom={1}
+            className="touchdevice-flow"
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
