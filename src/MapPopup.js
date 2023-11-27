@@ -28,8 +28,8 @@ function MapPopup(props) {
       
       const responseData = await response.json();
       setMapId(responseData.id);
-      setNetPort(responseData.source);
-      setToolPort(responseData.destination);
+      setNetPort(responseData.from);
+      setToolPort(responseData.to);
       setTextarea(responseData.description);
       // console.log(responseData);
     } 

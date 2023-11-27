@@ -8,6 +8,7 @@ export default () => {
   const [data, setData] = useState([]);
  
   const onDragStart = (event, id, name, nodeType) => {
+    console.log(name);
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.setData("id", id);
     event.dataTransfer.setData("name", name);
@@ -16,9 +17,7 @@ export default () => {
  
   const fetchData = async () => {
     try {
-      // const url = "https://my-json-server.typicode.com/rajkumar-palc/api/ethernet";
-      // const url = "http://localhost:2000/api/ethernets";
-      const url = `${url1}/Ethernet`;
+      const url = `${url1}/Map`;
       const response = await fetch(url);
  
       if (!response.ok) {
@@ -26,14 +25,8 @@ export default () => {
       }
      
       const responseData = await response.json();
-     
-      // Filter the data by 'usage' field with 'yes' value
-      // const filteredData = responseData.filter(item => item.usage === 'no');
-     
-      // Sort the filtered data by the 'id' field in ascending order
-      // const sortedData = filteredData.sort((a, b) => a.id - b.id);
       const sortedData = responseData.sort((a, b) => a.id - b.id);
- 
+    //   console.log(sortedData);
       setData(sortedData);
     }
     catch (error) {
@@ -45,7 +38,6 @@ export default () => {
     setTimeout(() => {
       fetchData();
     }, 1500);
-    // fetchData();
   });
  
   return (
@@ -53,31 +45,20 @@ export default () => {
     <div className="panel">
      
       <div id="a1">
-        <h4 id='a2'>Available Interfaces</h4>
+        <h4 id='a2'>Available Maps</h4>
       </div>
- 
       <div className="panel1">
         <div id="r">
           {data.map((data1) => (
             <div
               className="dndnode" id="r1"
-              onDragStart={(event) => onDragStart(event, data1.id, data1.name, "default")}
+              onDragStart={(event) => onDragStart(event, data1.id, data1.description, "default")}
               key={data1.id}
               draggable
             >
-              {data1.name}
+              {data1.description}
             </div>
           ))}
-        </div>
-      </div>
-      <div>
-        <hr></hr>
-        <div
-              className="dndnode" id="r2"
-              onDragStart={(event) => onDragStart(event, 'Group-1', 'Group', 'group')}
-              draggable
-        >
-          Group
         </div>
       </div>
     </div>

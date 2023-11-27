@@ -12,7 +12,12 @@ import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
+import SidebarRight from "./SidebarRight";
+import CustomFilterNode from "./CustomFilterNode";
+import CustomInputNode from "./CustomInputNode";
+import CustomOutputNode from "./CustomOutputNode";
 
+import "./index1.css";
 import EthModal from "./EthModal";
 
 
@@ -28,7 +33,10 @@ const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
 const nodeTypes = {
-  ResizableNodeSelected
+  ResizableNodeSelected,
+  CustomFilterNode,
+  CustomInputNode,
+  CustomOutputNode
 }
 
 const panOnDrag = [2, 2];
@@ -36,7 +44,7 @@ const panOnDrag = [2, 2];
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
  
-const nodeWidth = 390;
+const nodeWidth = 300;
 const nodeHeight = 10;
  
 // For Dagre Tree Layout
@@ -73,34 +81,8 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 
 const DnDFlow = () => {
 
-  const [initialNodes, setinitialNodes] = useState([]);
-  const GetNodes = async () => {
-    try {
-      const url = `${url1}/Node`;
-      const response = await fetch(url);
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-     
-      initialNodes = await response.json();
-      // console.log(initialNodes);
-      // const Nodes1 = await response.json();
-      // setinitialNodes(Nodes1);
-      // const Nodes = await response.json();
-      // console.log(Nodes);
-      // return Nodes;
-    }
-    catch (error) {
-      console.error(error);
-    }
-  };
-
-  GetNodes();
-  // console.log(initialNodes);
-
   const reactFlowWrapper = useRef(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
@@ -116,7 +98,7 @@ const DnDFlow = () => {
       const sourceNode = nodes.filter((node) => node.id === params.source);
       const targetNode = nodes.filter((node) => node.id === params.target);
       
-      //Single map has no duplication
+      //Single map has no duplicate interface
       let hasSingleTarget = false;
       let hasSingleSource = false;
       if(sourceNode[0].type1==="filter"){
@@ -125,68 +107,68 @@ const DnDFlow = () => {
       }
       else if(targetNode[0].type1==="filter"){
         const FilterEdges = edges.filter((edge) => (edge.source === targetNode[0].id) || (edge.target=== targetNode[0].id));
-        hasSingleTarget = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
+        hasSingleSource = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
       }
 
+      // Interface max connection is 1
       const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
       const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
 
       // console.log(edges);
-
-      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
-        if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
-          if(!hasSingleSource && !hasSingleTarget){
-            setEdges((eds) => addEdge(
-              {
-                ...params,
-                style: {
-                  stroke: 'black'
-                }
-              }, 
-            eds));
-            setConnectionMade(true);
+      if(sourceNode[0].type1 !== targetNode[0].type1){ // Interface to filter Connection (Manual Filter Connection)
+        if((!hasSource && !hasTarget)){ // Interface max connection == 1
+          if(!hasSingleSource && !hasSingleTarget){ // Single map has no duplicate interface
+              setEdges((eds) => addEdge(
+                {
+                  ...params,
+                  style: {
+                    stroke: 'black'
+                  }
+                }, 
+              eds));
+              setConnectionMade(true);
           }
         }
       }
-      else{ // Same type auto connect
-        if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
-          if(!hasSingleSource && !hasSingleTarget){
-            onclick();
-            let id = getFId1() - 1;
-            // console.log(id);
-            const params1 = {
-              "source" : params.source,
-              "sourceHandle" : params.sourceHandle,
-              "target" : `${id}`,
-              "targetHandle" : params.targetHandle
-            };
+      else{ // Interface to Interface (Auto Map Creation through filter) 
+          if((!hasSource && !hasTarget)){ // Interface max connection == 1
+              if(Math.round(sourceNode[0].id / 1000) !== Math.round(targetNode[0].id / 1000)){ // Single map has no duplicate interface
+                  onclick();
+                  let id = getFId1() - 1;
 
-            const params2 = {
-              "source" : `${id}`,
-              "sourceHandle" : params.sourceHandle,
-              "target" : params.target,
-              "targetHandle" : params.targetHandle
-            };
-            setEdges((eds) => addEdge(
-              {
-                ...params1,
-                style: {
-                  stroke: 'black'
-                }
-              }, 
-            eds));
-            setEdges((eds) => addEdge(
-              {
-                ...params2,
-                style: {
-                  stroke: 'black'
-                }
-              }, 
-            eds));
-            setConnectionMade(true);
-          }
+                  const params1 = {
+                    "source" : params.source,
+                    "sourceHandle" : params.sourceHandle,
+                    "target" : `${id}`,
+                    "targetHandle" : params.targetHandle
+                  };
+                  const params2 = {
+                    "source" : `${id}`,
+                    "sourceHandle" : params.sourceHandle,
+                    "target" : params.target,
+                    "targetHandle" : params.targetHandle
+                  };
+
+                  setEdges((eds) => addEdge(
+                    {
+                      ...params1,
+                      style: {
+                        stroke: 'black'
+                      }
+                    }, 
+                  eds));
+                  setEdges((eds) => addEdge(
+                    {
+                      ...params2,
+                      style: {
+                        stroke: 'black'
+                      }
+                    }, 
+                  eds));
+                  setConnectionMade(true);
+            }
         }
-      }
+    }
     },
     [edges,nodes,onLayout]
   );
@@ -225,10 +207,10 @@ const DnDFlow = () => {
 
         if (position.x <= 490) {
             sourcePos = "right";
-            type2 = "input";
+            type2 = "CustomInputNode";
         } else {
             targetPos = "left";
-            type2 = "output";
+            type2 = "CustomOutputNode";
         }
 
 
@@ -241,7 +223,7 @@ const DnDFlow = () => {
               position,
               sourcePosition: sourcePos,
               targetPosition: targetPos,
-              data: { label: `${name}` },
+              data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}e1.jpg`},
               type:"ResizableNodeSelected",
               type1: "normal",
               draggable: true,
@@ -260,7 +242,7 @@ const DnDFlow = () => {
             position,
             sourcePosition: sourcePos,
             targetPosition: targetPos,
-            data: { label: `${name}` },
+            data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}e1.jpg`},
             type: type2,
             type1: "normal",
             draggable: false
@@ -338,9 +320,9 @@ const DnDFlow = () => {
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { label: `${ID1}` },
+      data: { name: `${ID1}`, job:"hello", image:`${process.env.PUBLIC_URL}etherner.jpg`},
       type1: "filter",
-      type: "default",
+      type: "CustomFilterNode",
       // draggable: false
     };
 
@@ -411,8 +393,8 @@ const DnDFlow = () => {
             },
             body: JSON.stringify({
                 id : node.id,
-                source : sources,
-                destination : targets,
+                from : sources,
+                to : targets,
                 description : "Filter "+node.data.label
             }),
         })
@@ -575,7 +557,7 @@ const DnDFlow = () => {
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlowProvider>
-         
+      <SidebarRight/>
     </div>
   );
 };
