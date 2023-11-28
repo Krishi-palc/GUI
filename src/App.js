@@ -13,6 +13,10 @@ import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeSelected from "./ResizableNode";
 import EthModal from "./EthModal";
+import CustomFilterNode from "./CustomFilterNode";
+import CustomInputNode from "./CustomInputNode";
+import CustomOutputNode from "./CustomOutputNode";
+
 
 let fid = 1; // Filter id
 const createFid = () => { fid = 1};
@@ -26,7 +30,10 @@ const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
 const nodeTypes = {
-  ResizableNodeSelected
+  ResizableNodeSelected,
+  CustomFilterNode,
+  CustomInputNode,
+  CustomOutputNode
 }
 
 const panOnDrag = [2, 2];
@@ -65,9 +72,6 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   return { nodes, edges };
 };
 
-// const [initialNodes, setinitialNodes] = useState([]);
-
-// let initialNodes = [];
 
 const DnDFlow = () => {
 

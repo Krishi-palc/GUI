@@ -48,6 +48,7 @@ export default function ContextMenu({
       {...props}
     >
       <button onClick={deleteNode}>delete</button>
+      {/* <button onClick={deleteNode}>grp</button> */}
     </div>
   );
 }
