@@ -23,8 +23,6 @@ const createFid = () => { fid = 1};
 const getFId = () => `${fid++}`;
 const getFId1 = () => `${fid}`;
 
-let gid = 1; // Filter id
-const getGId = () => `Group${gid++}`;
 
 const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
@@ -100,6 +98,7 @@ const DnDFlow = () => {
 
   GetNodes();
   // console.log(initialNodes);
+  
 
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -111,6 +110,15 @@ const DnDFlow = () => {
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
   const [connectionMade, setConnectionMade] = useState(false);
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+  let gid = 1;
+  const [grps, setGrps] = useState([]);
+  const createGId= () => {
+    gid = 1
+  };
+  const getGId = () => `Group${gid++}`;
+
   
        // OnLayout
        const onLayout = useCallback(
@@ -119,10 +127,13 @@ const DnDFlow = () => {
               nodes: layoutedNodes,
               edges: layoutedEdges
             } = getLayoutedElements(nodes, edges, direction);
+            console.log(selectedNodes);
+          
     
             // Update the position of each node to start a few steps below its original position
             const yOffset = 90; // Adjust this value to set the desired vertical offset
             const xOffSet = 40;
+           
             const adjustedNodes = layoutedNodes.map((node) => (
               {
                   ...node,
@@ -133,7 +144,7 @@ const DnDFlow = () => {
             setNodes([...adjustedNodes]);
             setEdges([...layoutedEdges]);
         },
-        [nodes, edges]
+        [nodes, edges,selectedNodes]
       );
   // On Connect
   const onConnect = useCallback(
@@ -232,10 +243,11 @@ const DnDFlow = () => {
         const name = event.dataTransfer.getData("name");
 
         let newNode;
-
+        
         let sourcePos = null;
         let targetPos = null;
         let type2 = null;
+        
 
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
@@ -256,27 +268,31 @@ const DnDFlow = () => {
             type2 = "output";
         }
 
-        if (type==="group"){
-            do{
-              id = getGId();
-            }while(nodes.some((node) => node.id === id));
-            newNode = {
-              id: id,
-              position,
-              sourcePosition: sourcePos,
-              targetPosition: targetPos,
-              data: { label: `${name}` },
-              type:"ResizableNodeSelected",
-              type1: "normal",
-              draggable: true,
-          };
-        }
-        else{
+        // if (type==="group"){
+        //     do{
+        //       id = getGId();
+        //     }while(nodes.some((node) => node.id === id));
+        //     newNode = {
+        //       id: id,
+        //       position,
+        //       sourcePosition: sourcePos,
+        //       targetPosition: targetPos,
+        //       data: { label: `${name}` },
+        //       type:"ResizableNodeSelected",
+        //       type1: "normal",
+        //       draggable: true,
+              
+        //   };
+        // }
+        // else
+        {
           //Create the id for all node Ethernet
           id = createEid(id);
           while(nodes.some((node) => node.id === id)){
             id = getEid(id);
           }
+          let parent=null;
+        let extent=null;
 
           // Handler Position on nodes based on the PORT (Network | Tool)
           newNode = {
@@ -287,7 +303,10 @@ const DnDFlow = () => {
             data: { label: `${name}` },
             type: type2,
             type1: "normal",
-            draggable: false
+            parentNode:parent,
+            extent:extent,
+            draggable: true,
+      isHidden: false,
           };
         }
 
@@ -335,6 +354,8 @@ const DnDFlow = () => {
       e.preventDefault();
       
       setMenu({
+        nodes:nodes,
+        node:node,
         id: node.id,
         name: node.data.label,
         type1: node.type1,
@@ -345,7 +366,7 @@ const DnDFlow = () => {
         draggable: false
       });
     },
-    [setMenu]
+    [setMenu, nodes]
   );
 
   // onclick the filter 
@@ -445,8 +466,50 @@ const DnDFlow = () => {
     // Close the modal
     setshowModal(false);
   }, [nodes, edges]);
+
+  useEffect(() => {
+    // Handle keydown and keyup events to track the Ctrl key status
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey) {
+        setCtrlKeyPressed(true);
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (!e.ctrlKey) {
+        setCtrlKeyPressed(false);
+      }
+    };
+
+    // Attach event listeners
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+    // Cleanup event listeners on component unmount
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
   // Click the filter node
   const onNodeClick = (event, node) => {
+  
+    if (ctrlKeyPressed) {
+      // Toggle the selected state of the clicked node
+      setSelectedNodes((prevSelectedNodes) => {
+       
+        const newSelectedNodes = new Set(prevSelectedNodes);
+       
+        if (newSelectedNodes.has(node.id)) {
+          newSelectedNodes.delete(node.id);
+        } else {
+          newSelectedNodes.add(node.id);
+        }
+      
+        return newSelectedNodes;
+      });
+    } 
+
     let id=node.id;
     if (node.type1 === "filter") {
       // Check the connection 
@@ -506,6 +569,59 @@ const DnDFlow = () => {
     }
   };
 
+   //Grouping
+   const group = useCallback(
+    () => {
+      let newNode;
+      let gid;
+      gid = createGId();
+      // const GroupNodes = nodes.filter((node) => node.type === "group");
+      const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeSelected");
+      
+      do{
+          gid = getGId();
+        }while(GroupNodes.some((node) => node.id === gid));
+      setGrps((grps) => grps.concat(gid));
+      console.log(grps);
+      console.log(gid);
+      nodes.forEach((i) => {
+        if ((selectedNodes.has(i.id)) ){
+          newNode = {
+            id: gid,
+            data: { label: `${gid}`},
+            position: i.position,
+            style: {
+              width: 270,
+              height: 240,
+            },
+            type: 'group',
+            className: 'light',
+            type:"ResizableNodeSelected",
+            draggable: true,
+            isHidden: false,
+           }
+           const childNodePosition = {
+            x: i.position.x - newNode.position.x,
+            y: i.position.y - newNode.position.y,
+          };
+          const updatedNode = {
+            ...i,
+            parentNode: newNode.id,
+            extent: 'parent',
+            position: childNodePosition,
+            draggable: true,
+            isHidden: false,
+            zIndex:1
+          };
+          setNodes((prevNodes) => [...prevNodes.filter((node) => node.id !== i.id), newNode, updatedNode]);
+        }
+      });
+      setSelectedNodes(new Set());
+      console.log("grp",selectedNodes);
+      console.log(nodes);
+    },
+    [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
+  );
 
 
   // useEffect(() => {
@@ -524,14 +640,16 @@ const DnDFlow = () => {
   //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
   //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
   // }, [nodes, edges]);
+ 
 
   // OnConnect Left Right Layout is there
-  useEffect(() => {
-    if (connectionMade) {
-      onLayout('LR');
-      setConnectionMade(false);
-    }
-  }, [connectionMade, onLayout]);
+  // useEffect(() => {
+  //   if (connectionMade) {
+  //     onLayout('LR');
+  //     setConnectionMade(false);
+  //   }
+  // }, [connectionMade, onLayout]);
+  
 
 
   return (
@@ -543,10 +661,10 @@ const DnDFlow = () => {
         {showModal && (
             <Modal close={setshowModal} nodeId={nodeId} onDelete={onDelete} />
         )}
-        { showEthModal && (
+        {/* { showEthModal && (
           <EthModal close={setshowEthModal} nodeId={nodeId}/>
           )
-        }
+        } */}
           <ReactFlow
             ref={ref}
             nodes={nodes}
@@ -566,6 +684,8 @@ const DnDFlow = () => {
             panOnScroll
             minZoom={1}
             maxZoom={1}
+           
+           
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
@@ -574,6 +694,7 @@ const DnDFlow = () => {
             {/*<!--img src="plus.png" alt="Mapping"></img-->*/}
             </Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel>
+            <Panel position="bottom-left" className='z3' onClick={() => group()}>Group</Panel>
            <LoadingPage/>
           </ReactFlow>
         </div>

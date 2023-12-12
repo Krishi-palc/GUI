@@ -72,7 +72,7 @@ export default () => {
           ))}
         </div>
       </div>
-      <div>
+      {/* <div>
         <hr></hr>
         <div
               className="dndnode"
@@ -82,7 +82,7 @@ export default () => {
         >
           Group
         </div>
-      </div>
+      </div> */}
     </div>
   </>
   );

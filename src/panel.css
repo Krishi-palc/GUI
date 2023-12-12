@@ -7,15 +7,15 @@
 }
  
 .panel1{
-  height: 80%;
+  height: 90%;
   overflow-y: scroll;
   justify-content: center;
 }
  
-.panel #a1{
+/* .panel #a1{
   height: 10%;
   text-align:center;
-}
+} */
  
 .panel #a2{
  font-family:initial;
