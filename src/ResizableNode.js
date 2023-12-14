@@ -4,9 +4,9 @@ import { Handle, Position, NodeResizer } from 'reactflow';
 const ResizableNodeSelected = ({ data}) => {
     return (
         <>
-          <NodeResizer minWidth={100} minHeight={200} />
+          <NodeResizer minWidth={100} minHeight={200} color='black' />
           <Handle type="target" position={Position.Left} />
-          <div style={{ padding: 10 }}>{data.label}</div>
+          {/* <div style={{ padding: 10 }}>{data.label}</div> */}
           <Handle type="source" position={Position.Right} />
         </>
       );

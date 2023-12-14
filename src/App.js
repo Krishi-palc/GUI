@@ -112,6 +112,9 @@ const DnDFlow = () => {
   const [connectionMade, setConnectionMade] = useState(false);
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+  
+
+ 
   let gid = 1;
   const [grps, setGrps] = useState([]);
   const createGId= () => {
@@ -268,23 +271,6 @@ const DnDFlow = () => {
             type2 = "output";
         }
 
-        // if (type==="group"){
-        //     do{
-        //       id = getGId();
-        //     }while(nodes.some((node) => node.id === id));
-        //     newNode = {
-        //       id: id,
-        //       position,
-        //       sourcePosition: sourcePos,
-        //       targetPosition: targetPos,
-        //       data: { label: `${name}` },
-        //       type:"ResizableNodeSelected",
-        //       type1: "normal",
-        //       draggable: true,
-              
-        //   };
-        // }
-        // else
         {
           //Create the id for all node Ethernet
           id = createEid(id);
@@ -493,6 +479,7 @@ const DnDFlow = () => {
   }, []);
   // Click the filter node
   const onNodeClick = (event, node) => {
+    console.log("node clicked",node);
   
     if (ctrlKeyPressed) {
       // Toggle the selected state of the clicked node
@@ -588,7 +575,6 @@ const DnDFlow = () => {
         if ((selectedNodes.has(i.id)) ){
           newNode = {
             id: gid,
-            data: { label: `${gid}`},
             position: i.position,
             style: {
               width: 270,
@@ -613,7 +599,7 @@ const DnDFlow = () => {
             isHidden: false,
             zIndex:1
           };
-          setNodes((prevNodes) => [...prevNodes.filter((node) => node.id !== i.id), newNode, updatedNode]);
+          setNodes((prevNodes) => [...prevNodes.filter((node) => (node.id !== i.id && node.id !== newNode.id )), newNode, updatedNode]);
         }
       });
       setSelectedNodes(new Set());
@@ -622,8 +608,105 @@ const DnDFlow = () => {
     },
     [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
   );
+ 
+  const onNodeDragStop = (evt, node) => {
+    if(node.type != "ResizableNodeSelected" && !node?.extent ){
+      const centerX = node.position.x + node.width / 2;
+      const centerY = node.position.y + node.height / 2;
 
+      const targetNode = nodes.find(
+        (n) =>
+          centerX > n.position.x &&
+          centerX < n.position.x + n.width &&
+          centerY > n.position.y &&
+          centerY < n.position.y + n.height &&
+          n.id !== node.id // this is needed, otherwise we would always find the dragged node
+       );
+       console.log(targetNode);
 
+       if (targetNode) {
+        const childNodePosition = {
+          x: node.position.x - targetNode.position.x,
+          y: node.position.y - targetNode.position.y,
+        };
+    
+        const updatedNode = {
+          ...node,
+          parentNode: targetNode.id,
+          extent: 'parent',
+          position: childNodePosition,
+          draggable: true,
+          isHidden: false,
+          zIndex: 1,
+        };
+    
+        setNodes((prevNodes) => {
+          const filteredNodes = prevNodes.filter((n) => n.id !== node.id);
+          return [...filteredNodes, updatedNode];
+        });
+      }
+    }
+  };
+  
+  const isNodeInside = (childNode, parentNode) => {
+    
+    return(
+      childNode.position.x >= parentNode.position.x &&
+      childNode.position.x + childNode.width <= parentNode.position.x + parentNode.width &&
+      childNode.position.y >= parentNode.position.y &&
+      childNode.position.y + childNode.height <= parentNode.position.y + parentNode.height 
+    );
+    
+    
+  };
+
+  // // const onNodeDragStop = (evt, node) => {
+  //   console.log("tar",target);
+  //   if (target && target.type==="ResizableNodeSelected"){
+  //     const childNodePosition = {
+  //       x: node.position.x - target.position.x,
+  //       y: node.position.y - target.position.y,
+  //     };
+  //     const updatedNode = {
+  //       ...node,
+  //       parentNode: target.id,
+  //       extent: 'parent',
+  //       position: childNodePosition,
+  //       draggable: true,
+  //       isHidden: false,
+  //       zIndex:1
+  //     };
+  //     setNodes((prevNodes) => [...prevNodes.filter((n) => n.id !== node.id),updatedNode]);
+  //   }
+  //   setTarget(null);
+  //   dragRef.current = null;
+  //   console.log("nodes",nodes);
+  // };
+  // useEffect(() => {
+   
+  //   if (target && target.type==="ResizableNodeSelected"){
+  //     const childNodePosition = {
+  //       x: above.position.x - target.position.x,
+  //       y: above.position.y - target.position.y,
+  //     };
+  //     const updatedNode = {
+  //       ...above,
+  //       parentNode: target.id,
+  //       extent: 'parent',
+  //       position: childNodePosition,
+  //       draggable: true,
+  //       isHidden: false,
+  //       zIndex:1
+  //     };
+  //     setNodes((prevNodes) => [...prevNodes.filter((n) => n.id !== above.id),updatedNode]);
+  //   }
+  //   console.log("target",target);
+  //   console.log("Above",above);
+  //   setTarget(null);
+  //   setAbove(null);
+  //   dragRef.current = null;
+  //   //console.log("nodes",nodes);
+  // }, [target,setAbove,setTarget,setNodes,above,dragRef]);
   // useEffect(() => {
   //   // Load data from local storage on component mount
   //   const storedNodes = localStorage.getItem('flowchart-nodes');
@@ -684,8 +767,9 @@ const DnDFlow = () => {
             panOnScroll
             minZoom={1}
             maxZoom={1}
-           
-           
+           // onNodeDragStart={onNodeDragStart}
+            //onNodeDrag={onNodeDrag}
+           onNodeDragStop={onNodeDragStop}
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
