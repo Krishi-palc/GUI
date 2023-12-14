@@ -11,7 +11,8 @@ import url1 from "./url1";
 import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
-import ResizableNodeSelected from "./ResizableNode";
+import ResizableNodeInput from "./ResizableNodeInput";
+import ResizableNodeOutput from "./ResizableNodeOutput";
 import EthModal from "./EthModal";
 import CustomFilterNode from "./CustomFilterNode";
 import CustomInputNode from "./CustomInputNode";
@@ -28,7 +29,8 @@ const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
 const nodeTypes = {
-  ResizableNodeSelected,
+  ResizableNodeInput,
+  ResizableNodeOutput,
   CustomFilterNode,
   CustomInputNode,
   CustomOutputNode
@@ -560,14 +562,23 @@ const DnDFlow = () => {
       let gid;
       let c=0,posx,posy;
       let stopLoop;
+      let sourcePos = null;
+        let targetPos = null;
       gid = createGId();
-      const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeSelected");
+      const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || "ResizableNodeOutput");
       do{
           gid = getGId();
         }while(GroupNodes.some((node) => node.id === gid));
       setGrps((grps) => grps.concat(gid));
-      nodes.some((node) => {
+      console.log(nodes);
+
+      nodes.find((node) => {
         if (selectedNodes.has(node.id)) {
+          if (node.position.x <= 490) {
+            sourcePos = "right";
+          }
+          else {targetPos = "left";}
+          if (sourcePos==="right"){
             newNode = {
                 id: gid,
                 position: node.position,
@@ -576,11 +587,31 @@ const DnDFlow = () => {
                     height: 240,
                 },
                 type: 'group',
+                sourcePosition: sourcePos,
+                targetPosition: "right",
                 className: 'light',
-                type: "ResizableNodeSelected",
+                type: "ResizableNodeInput",
                 draggable: true,
                 isHidden: false,
             };
+          }
+          else{
+            newNode = {
+              id: gid,
+              position: node.position,
+              style: {
+                  width: 270,
+                  height: 240,
+              },
+              type: 'group',
+              sourcePosition: sourcePos,
+              targetPosition: "right",
+              className: 'light',
+              type: "ResizableNodeOutput",
+              draggable: true,
+              isHidden: false,
+          }
+        }
             posx=node.position.x;
             posy=node.position.y;
             stopLoop = true; // Set the flag to stop the loop
@@ -593,8 +624,6 @@ const DnDFlow = () => {
               x: (posx - newNode.position.x)+10,
               y: (posy - newNode.position.y)+(c*10),
             };
-          console.log(node);
-          console.log(childNodePosition);
           const updatedNode = {
             ...node,
             parentNode: newNode.id,
@@ -605,7 +634,7 @@ const DnDFlow = () => {
             zIndex:1
           };
          c=c+5;
-          setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id)), newNode, updatedNode]);
+          setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id && nd.id !== newNode.id)), newNode, updatedNode]);
         }
       });
       setSelectedNodes(new Set());
