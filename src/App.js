@@ -130,7 +130,7 @@ const DnDFlow = () => {
               nodes: layoutedNodes,
               edges: layoutedEdges
             } = getLayoutedElements(nodes, edges, direction);
-            console.log(selectedNodes);
+
           
     
             // Update the position of each node to start a few steps below its original position
@@ -192,7 +192,6 @@ const DnDFlow = () => {
           if(!hasSingleSource && !hasSingleTarget){
             onclick();
             let id = getFId1() - 1;
-            console.log(id);
             const params1 = {
               "source" : params.source,
               "sourceHandle" : params.sourceHandle,
@@ -479,8 +478,6 @@ const DnDFlow = () => {
   }, []);
   // Click the filter node
   const onNodeClick = (event, node) => {
-    console.log("node clicked",node);
-  
     if (ctrlKeyPressed) {
       // Toggle the selected state of the clicked node
       setSelectedNodes((prevSelectedNodes) => {
@@ -561,37 +558,45 @@ const DnDFlow = () => {
     () => {
       let newNode;
       let gid;
+      let c=0,posx,posy;
+      let stopLoop;
       gid = createGId();
-      // const GroupNodes = nodes.filter((node) => node.type === "group");
       const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeSelected");
-      
       do{
           gid = getGId();
         }while(GroupNodes.some((node) => node.id === gid));
       setGrps((grps) => grps.concat(gid));
-      console.log(grps);
-      console.log(gid);
-      nodes.forEach((i) => {
-        if ((selectedNodes.has(i.id)) ){
-          newNode = {
-            id: gid,
-            position: i.position,
-            style: {
-              width: 270,
-              height: 240,
-            },
-            type: 'group',
-            className: 'light',
-            type:"ResizableNodeSelected",
-            draggable: true,
-            isHidden: false,
-           }
-           const childNodePosition = {
-            x: i.position.x - newNode.position.x,
-            y: i.position.y - newNode.position.y,
-          };
+      nodes.some((node) => {
+        if (selectedNodes.has(node.id)) {
+            newNode = {
+                id: gid,
+                position: node.position,
+                style: {
+                    width: 270,
+                    height: 240,
+                },
+                type: 'group',
+                className: 'light',
+                type: "ResizableNodeSelected",
+                draggable: true,
+                isHidden: false,
+            };
+            posx=node.position.x;
+            posy=node.position.y;
+            stopLoop = true; // Set the flag to stop the loop
+            return true; // Return true to exit the some method
+        }
+    });
+      nodes.forEach((node) => {
+        if ((selectedNodes.has(node.id))){
+          const childNodePosition = {
+              x: (posx - newNode.position.x)+10,
+              y: (posy - newNode.position.y)+(c*10),
+            };
+          console.log(node);
+          console.log(childNodePosition);
           const updatedNode = {
-            ...i,
+            ...node,
             parentNode: newNode.id,
             extent: 'parent',
             position: childNodePosition,
@@ -599,12 +604,11 @@ const DnDFlow = () => {
             isHidden: false,
             zIndex:1
           };
-          setNodes((prevNodes) => [...prevNodes.filter((node) => (node.id !== i.id && node.id !== newNode.id )), newNode, updatedNode]);
+         c=c+5;
+          setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id)), newNode, updatedNode]);
         }
       });
       setSelectedNodes(new Set());
-      console.log("grp",selectedNodes);
-      console.log(nodes);
     },
     [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
   );
@@ -622,7 +626,6 @@ const DnDFlow = () => {
           centerY < n.position.y + n.height &&
           n.id !== node.id // this is needed, otherwise we would always find the dragged node
        );
-       console.log(targetNode);
 
        if (targetNode) {
         const childNodePosition = {
@@ -648,65 +651,6 @@ const DnDFlow = () => {
     }
   };
   
-  const isNodeInside = (childNode, parentNode) => {
-    
-    return(
-      childNode.position.x >= parentNode.position.x &&
-      childNode.position.x + childNode.width <= parentNode.position.x + parentNode.width &&
-      childNode.position.y >= parentNode.position.y &&
-      childNode.position.y + childNode.height <= parentNode.position.y + parentNode.height 
-    );
-    
-    
-  };
-
-  // // const onNodeDragStop = (evt, node) => {
-  //   console.log("tar",target);
-  //   if (target && target.type==="ResizableNodeSelected"){
-  //     const childNodePosition = {
-  //       x: node.position.x - target.position.x,
-  //       y: node.position.y - target.position.y,
-  //     };
-  //     const updatedNode = {
-  //       ...node,
-  //       parentNode: target.id,
-  //       extent: 'parent',
-  //       position: childNodePosition,
-  //       draggable: true,
-  //       isHidden: false,
-  //       zIndex:1
-  //     };
-  //     setNodes((prevNodes) => [...prevNodes.filter((n) => n.id !== node.id),updatedNode]);
-  //   }
-  //   setTarget(null);
-  //   dragRef.current = null;
-  //   console.log("nodes",nodes);
-  // };
-  // useEffect(() => {
-   
-  //   if (target && target.type==="ResizableNodeSelected"){
-  //     const childNodePosition = {
-  //       x: above.position.x - target.position.x,
-  //       y: above.position.y - target.position.y,
-  //     };
-  //     const updatedNode = {
-  //       ...above,
-  //       parentNode: target.id,
-  //       extent: 'parent',
-  //       position: childNodePosition,
-  //       draggable: true,
-  //       isHidden: false,
-  //       zIndex:1
-  //     };
-  //     setNodes((prevNodes) => [...prevNodes.filter((n) => n.id !== above.id),updatedNode]);
-  //   }
-  //   console.log("target",target);
-  //   console.log("Above",above);
-  //   setTarget(null);
-  //   setAbove(null);
-  //   dragRef.current = null;
-  //   //console.log("nodes",nodes);
-  // }, [target,setAbove,setTarget,setNodes,above,dragRef]);
   // useEffect(() => {
   //   // Load data from local storage on component mount
   //   const storedNodes = localStorage.getItem('flowchart-nodes');
