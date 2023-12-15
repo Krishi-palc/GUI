@@ -13,11 +13,12 @@ import "./app.css";
 import LoadingPage from "./LoadingPage";
 import ResizableNodeInput from "./ResizableNodeInput";
 import ResizableNodeOutput from "./ResizableNodeOutput";
-import EthModal from "./EthModal";
 import CustomFilterNode from "./CustomFilterNode";
 import CustomInputNode from "./CustomInputNode";
 import CustomOutputNode from "./CustomOutputNode";
-
+import "./CustomFilterNode.css";
+import "./CustomInput.css";
+import "./CustomOutput.css";
 
 let fid = 1; // Filter id
 const createFid = () => { fid = 1};
@@ -480,6 +481,7 @@ const DnDFlow = () => {
   }, []);
   // Click the filter node
   const onNodeClick = (event, node) => {
+    let flag=false;
     if (ctrlKeyPressed) {
       // Toggle the selected state of the clicked node
       setSelectedNodes((prevSelectedNodes) => {
@@ -487,14 +489,16 @@ const DnDFlow = () => {
         const newSelectedNodes = new Set(prevSelectedNodes);
        
         if (newSelectedNodes.has(node.id)) {
-          newSelectedNodes.delete(node.id);
+          newSelectedNodes.delete([node.id,node.type]);
         } else {
-          newSelectedNodes.add(node.id);
+          newSelectedNodes.add([node.id,node.type]);
         }
       
         return newSelectedNodes;
       });
-    } 
+    }
+   
+    
 
     let id=node.id;
     if (node.type1 === "filter") {
@@ -558,92 +562,113 @@ const DnDFlow = () => {
    //Grouping
    const group = useCallback(
     () => {
-      let newNode;
-      let gid;
-      let c=0,posx,posy;
-      let stopLoop;
-      let sourcePos = null;
-        let targetPos = null;
-      gid = createGId();
-      const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || "ResizableNodeOutput");
-      do{
-          gid = getGId();
-        }while(GroupNodes.some((node) => node.id === gid));
-      setGrps((grps) => grps.concat(gid));
-      console.log(nodes);
+      console.log(selectedNodes);
+  
+      const selectedNodeTypesArray = Array.from(selectedNodes).map(([id, type]) => type);
+      
+      if (selectedNodeTypesArray.length > 1) {
+          const firstNodeType = selectedNodeTypesArray[0];
+     
+          if(selectedNodeTypesArray.every((node) => node === firstNodeType)){
+            let newNode;
+            let gid;
+            let c=0,posx,posy;
+            let stopLoop;
+            let sourcePos = null;
+            let targetPos = null;
+            gid = createGId();
+            const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || "ResizableNodeOutput");
+            do{
+                gid = getGId();
+              }while(GroupNodes.some((node) => node.id === gid));
+            setGrps((grps) => grps.concat(gid));
+          
+            nodes.find((node) => {
+              const selectedNodeArray = Array.from(selectedNodes).map(([id, type]) => id);
+              console.log(selectedNodeArray);
+              if (selectedNodeArray.includes(node.id)) {
+                console.log(firstNodeType);
+            
+                // if (node.position.x <= 490) {
+                //   sourcePos = "right";
+                // }
+                // else {targetPos = "left";}
+                if (firstNodeType==="input"){
+                  newNode = {
+                      id: gid,
+                      position: node.position,
+                      style: {
+                          width: 270,
+                          height: 240,
+                      },
+                      type: 'group',
+                      sourcePosition: sourcePos,
+                      targetPosition: "right",
+                      className: 'light',
+                      type: "ResizableNodeInput",
+                      draggable: true,
+                      isHidden: false,
+                  };
+                }
+                else{
+                  newNode = {
+                    id: gid,
+                    position: node.position,
+                    style: {
+                        width: 270,
+                        height: 240,
+                    },
+                    type: 'group',
+                    sourcePosition: sourcePos,
+                    targetPosition: "right",
+                    className: 'light',
+                    type: "ResizableNodeOutput",
+                    draggable: true,
+                    isHidden: false,
+                }
+              }
+                  posx=node.position.x;
+                  posy=node.position.y;
+                  stopLoop = true; // Set the flag to stop the loop
+                  return true; // Return true to exit the some method
+              }
+          });
+            nodes.forEach((node) => {
+            const selectedNodeArray = Array.from(selectedNodes).map(([id, type]) => id);
+            if (selectedNodeArray.includes(node.id)) {
+                const childNodePosition = {
+                    x: (posx - newNode.position.x)+10,
+                    y: (posy - newNode.position.y)+(c*10),
+                  };
+                const updatedNode = {
+                  ...node,
+                  parentNode: newNode.id,
+                  extent: 'parent',
+                  position: childNodePosition,
+                  draggable: true,
+                  isHidden: false,
+                  connectable: false,
+                  zIndex:1
+                };
+               c=c+5;
+                setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id && nd.id !== newNode.id)), newNode, updatedNode]);
+              }
+            });
+            setSelectedNodes(new Set());
 
-      nodes.find((node) => {
-        if (selectedNodes.has(node.id)) {
-          if (node.position.x <= 490) {
-            sourcePos = "right";
-          }
-          else {targetPos = "left";}
-          if (sourcePos==="right"){
-            newNode = {
-                id: gid,
-                position: node.position,
-                style: {
-                    width: 270,
-                    height: 240,
-                },
-                type: 'group',
-                sourcePosition: sourcePos,
-                targetPosition: "right",
-                className: 'light',
-                type: "ResizableNodeInput",
-                draggable: true,
-                isHidden: false,
-            };
           }
           else{
-            newNode = {
-              id: gid,
-              position: node.position,
-              style: {
-                  width: 270,
-                  height: 240,
-              },
-              type: 'group',
-              sourcePosition: sourcePos,
-              targetPosition: "right",
-              className: 'light',
-              type: "ResizableNodeOutput",
-              draggable: true,
-              isHidden: false,
+            setSelectedNodes(new Set());
+            console.log("cleared");
           }
-        }
-            posx=node.position.x;
-            posy=node.position.y;
-            stopLoop = true; // Set the flag to stop the loop
-            return true; // Return true to exit the some method
-        }
-    });
-      nodes.forEach((node) => {
-        if ((selectedNodes.has(node.id))){
-          const childNodePosition = {
-              x: (posx - newNode.position.x)+10,
-              y: (posy - newNode.position.y)+(c*10),
-            };
-          const updatedNode = {
-            ...node,
-            parentNode: newNode.id,
-            extent: 'parent',
-            position: childNodePosition,
-            draggable: true,
-            isHidden: false,
-            zIndex:1
-          };
-         c=c+5;
-          setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id && nd.id !== newNode.id)), newNode, updatedNode]);
-        }
-      });
-      setSelectedNodes(new Set());
+      } 
     },
     [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
   );
  
   const onNodeDragStop = (evt, node) => {
-    if(node.type != "ResizableNodeSelected" && !node?.extent ){
+    let tpe;
+    if((node.type != "ResizableNodeInput" || node.type != "ResizableNodeOutput") && !node?.extent ){
       const centerX = node.position.x + node.width / 2;
       const centerY = node.position.y + node.height / 2;
 
@@ -655,8 +680,14 @@ const DnDFlow = () => {
           centerY < n.position.y + n.height &&
           n.id !== node.id // this is needed, otherwise we would always find the dragged node
        );
-
        if (targetNode) {
+        if (targetNode.type==="ResizableNodeInput")
+        {
+          tpe="input";
+        }
+        else {tpe="output";}
+        if(tpe===node.type)
+        {
         const childNodePosition = {
           x: node.position.x - targetNode.position.x,
           y: node.position.y - targetNode.position.y,
@@ -677,6 +708,7 @@ const DnDFlow = () => {
           return [...filteredNodes, updatedNode];
         });
       }
+    }
     }
   };
   

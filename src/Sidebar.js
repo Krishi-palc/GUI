@@ -72,17 +72,6 @@ export default () => {
           ))}
         </div>
       </div>
-      {/* <div>
-        <hr></hr>
-        <div
-              className="dndnode"
-              onDragStart={(event) => onDragStart(event, '3000', "", "group")}
-              draggable
-            
-        >
-          Group
-        </div>
-      </div> */}
     </div>
   </>
   );
