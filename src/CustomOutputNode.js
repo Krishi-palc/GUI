@@ -18,6 +18,7 @@ import React, { memo } from 'react';
 import { Handle} from 'reactflow';
 import "./CustomOutput.css";
 function CustomInputNode({ data }) {
+  console.log(data);
     return (
         <div id="a1">
             <div id="a2">

@@ -5,7 +5,7 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #6b8b977a;
+  background-color:burlywood;
   box-sizing: border-box;
   font-family: sans-serif;
 }
@@ -24,6 +24,6 @@ body,
   position: fixed;
   top: 0;
   left: 0;
-  background-color: white; /* Adjust the background color as needed */
+  background-color:#d2a679; /* Adjust the background color as needed */
   z-index: 9999; /* Ensure it's above other elements on the page */
 }

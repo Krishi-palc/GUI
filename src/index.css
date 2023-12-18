@@ -5,6 +5,7 @@
   height: 100%;
 }
 
+
 .dndflow .dndnode {
   height: 30px;
   padding: 4px;
@@ -20,6 +21,10 @@
 
 .dndflow .dndnode.input {
   border-color: #0041d1;
+  color:pink;
+}
+.dndflow .dndnode .r2{
+  background-color: brown;
 }
 
 .dndflow .dndnode.output {

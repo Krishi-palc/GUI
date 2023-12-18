@@ -20,6 +20,8 @@ import "./CustomFilterNode.css";
 import "./CustomInput.css";
 import "./CustomOutput.css";
 
+import "./index1.css";
+
 let fid = 1; // Filter id
 const createFid = () => { fid = 1};
 const getFId = () => `${fid++}`;
@@ -125,30 +127,24 @@ const DnDFlow = () => {
   };
   const getGId = () => `Group${gid++}`;
 
-  
-       // OnLayout
-       const onLayout = useCallback(
-        (direction) => {
-            const {
-              nodes: layoutedNodes,
-              edges: layoutedEdges
-            } = getLayoutedElements(nodes, edges, direction);
-
-          
-    
-            // Update the position of each node to start a few steps below its original position
-            const yOffset = 90; // Adjust this value to set the desired vertical offset
-            const xOffSet = 40;
-           
-            const adjustedNodes = layoutedNodes.map((node) => (
-              {
-                  ...node,
-                 position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
-              }
-            ));
-           
-            setNodes([...adjustedNodes]);
-            setEdges([...layoutedEdges]);
+  // OnLayout
+  const onLayout = useCallback(
+    (direction) => {
+    const {
+        nodes: layoutedNodes,
+        edges: layoutedEdges
+        } = getLayoutedElements(nodes, edges, direction);
+    // Update the position of each node to start a few steps below its original position
+        const yOffset = 90; // Adjust this value to set the desired vertical offset
+        const xOffSet = 40;
+        const adjustedNodes = layoutedNodes.map((node) => (
+            {
+              ...node,
+              position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+            }
+        ));         
+        setNodes([...adjustedNodes]);
+        setEdges([...layoutedEdges]);
         },
         [nodes, edges,selectedNodes]
       );
@@ -172,10 +168,13 @@ const DnDFlow = () => {
 
       const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
       const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
+      console.log(Math.floor(sourceNode[0].id/1000)!==(Math.floor(targetNode[0].id/1000)));
+      const flag=Math.floor(sourceNode[0].id/1000)!==(Math.floor(targetNode[0].id/1000));
+      if(flag===false){
+        alert("Cannot connect to same interface");
+      }
 
-      console.log(edges);
-
-      if(sourceNode[0].type1 !== targetNode[0].type1){ // Same type nodes does not connect
+      if((sourceNode[0].type1 !== targetNode[0].type1)){ // Same type nodes does not connect
         if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
           if(!hasSingleSource && !hasSingleTarget){
             setEdges((eds) => addEdge(
@@ -191,7 +190,7 @@ const DnDFlow = () => {
         }
       }
       else{ // Same type auto connect
-        if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
+        if((!hasSource && !hasTarget) && (flag===true)){ // Ethernet node has only one connection
           if(!hasSingleSource && !hasSingleTarget){
             onclick();
             let id = getFId1() - 1;
@@ -267,10 +266,10 @@ const DnDFlow = () => {
 
         if (position.x <= 490) {
             sourcePos = "right";
-            type2 = "input";
+            type2 = "CustomInputNode";
         } else {
             targetPos = "left";
-            type2 = "output";
+            type2 = "CustomOutputNode";
         }
 
         {
@@ -288,13 +287,13 @@ const DnDFlow = () => {
             position,
             sourcePosition: sourcePos,
             targetPosition: targetPos,
-            data: { label: `${name}` },
+            data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}eth_icon.jpg`},
             type: type2,
             type1: "normal",
             parentNode:parent,
             extent:extent,
             draggable: true,
-      isHidden: false,
+             isHidden: false,
           };
         }
 
@@ -371,10 +370,9 @@ const DnDFlow = () => {
       position: { x: 490, y: pos },
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { label: `${ID1}` },
+      data: { name: `Filter ${ID1}`, job: 'Filter', image: `${process.env.PUBLIC_URL}/filter.jpg`},
       type1: "filter",
-      type: "default",
-      // draggable: false
+      type: "CustomFilterNode"
     };
 
     // Insert the node
@@ -493,13 +491,12 @@ const DnDFlow = () => {
         } else {
           newSelectedNodes.add([node.id,node.type]);
         }
+   
       
         return newSelectedNodes;
       });
     }
    
-    
-
     let id=node.id;
     if (node.type1 === "filter") {
       // Check the connection 
@@ -508,13 +505,10 @@ const DnDFlow = () => {
       const hasRightConnection = connectedEdges.some((edge) => edge.source === node.id);
   
       if (hasLeftConnection && hasRightConnection) {
-        setshowModal(true);
-      
+        setshowModal(true);   
         // Set the node for model
         setNodeId(node.id);
-        // onLayout('LR'); 
-        // Insert the Map
-
+        // onLayout('LR');
         // Target and source Mention
         let target1 = connectedEdges.filter((edge) => edge.source === node.id);
         let source1 = connectedEdges.filter((edge) => edge.target === node.id);
@@ -546,7 +540,7 @@ const DnDFlow = () => {
             return response.json();
           })
           .then((data) => {
-            console.log('Updated data:', data);
+            //console.log('Updated data:', data);
           })
           .catch((error) => {
             console.error('Error:', error);
@@ -562,22 +556,18 @@ const DnDFlow = () => {
    //Grouping
    const group = useCallback(
     () => {
-      console.log(selectedNodes);
-  
-      const selectedNodeTypesArray = Array.from(selectedNodes).map(([id, type]) => type);
-      
+       const selectedNodeTypesArray = Array.from(selectedNodes).map(([id, type]) => type);   
       if (selectedNodeTypesArray.length > 1) {
-          const firstNodeType = selectedNodeTypesArray[0];
-     
-          if(selectedNodeTypesArray.every((node) => node === firstNodeType)){
+          const firstNodeType = selectedNodeTypesArray[0]; 
+          
+          if(selectedNodeTypesArray.every((node) => node=== firstNodeType)){
             let newNode;
             let gid;
             let c=0,posx,posy;
-            let stopLoop;
-            let sourcePos = null;
-            let targetPos = null;
+            let stopLoop;            
             gid = createGId();
-            const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || "ResizableNodeOutput");
+            const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || node.type === "ResizableNodeOutput");
+           
             do{
                 gid = getGId();
               }while(GroupNodes.some((node) => node.id === gid));
@@ -585,15 +575,10 @@ const DnDFlow = () => {
           
             nodes.find((node) => {
               const selectedNodeArray = Array.from(selectedNodes).map(([id, type]) => id);
-              console.log(selectedNodeArray);
+         
               if (selectedNodeArray.includes(node.id)) {
-                console.log(firstNodeType);
             
-                // if (node.position.x <= 490) {
-                //   sourcePos = "right";
-                // }
-                // else {targetPos = "left";}
-                if (firstNodeType==="input"){
+                if (firstNodeType==="CustomInputNode"){
                   newNode = {
                       id: gid,
                       position: node.position,
@@ -601,10 +586,6 @@ const DnDFlow = () => {
                           width: 270,
                           height: 240,
                       },
-                      type: 'group',
-                      sourcePosition: sourcePos,
-                      targetPosition: "right",
-                      className: 'light',
                       type: "ResizableNodeInput",
                       draggable: true,
                       isHidden: false,
@@ -618,10 +599,6 @@ const DnDFlow = () => {
                         width: 270,
                         height: 240,
                     },
-                    type: 'group',
-                    sourcePosition: sourcePos,
-                    targetPosition: "right",
-                    className: 'light',
                     type: "ResizableNodeOutput",
                     draggable: true,
                     isHidden: false,
@@ -653,14 +630,14 @@ const DnDFlow = () => {
                c=c+5;
                 setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id && nd.id !== newNode.id)), newNode, updatedNode]);
               }
+              
             });
             setSelectedNodes(new Set());
-
           }
           else{
-            setSelectedNodes(new Set());
-            console.log("cleared");
-          }
+              alert("Source and target can't be in the same group!!");
+              setSelectedNodes(new Set());           
+          }   
       } 
     },
     [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
@@ -668,6 +645,7 @@ const DnDFlow = () => {
  
   const onNodeDragStop = (evt, node) => {
     let tpe;
+   
     if((node.type != "ResizableNodeInput" || node.type != "ResizableNodeOutput") && !node?.extent ){
       const centerX = node.position.x + node.width / 2;
       const centerY = node.position.y + node.height / 2;
@@ -681,11 +659,15 @@ const DnDFlow = () => {
           n.id !== node.id // this is needed, otherwise we would always find the dragged node
        );
        if (targetNode) {
+        const NodeinsideGroup = nodes.filter((node) => node.parentNode === targetNode.id);
+        const NodeIdinsideGroup=NodeinsideGroup.filter((nd) => Math.floor(nd.id/1000) === Math.floor(node.id/1000));    
+        if (NodeIdinsideGroup.length<1)
+        {
         if (targetNode.type==="ResizableNodeInput")
         {
-          tpe="input";
+          tpe="CustomInputNode";
         }
-        else {tpe="output";}
+        else {tpe="CustomOutputNode";}
         if(tpe===node.type)
         {
         const childNodePosition = {
@@ -708,10 +690,22 @@ const DnDFlow = () => {
           return [...filteredNodes, updatedNode];
         });
       }
+      else
+      {
+        if (tpe==="CustomInputNode")
+            alert("Interface can't be dropped inside source group");
+        else
+            alert("Interface can't be dropped inside target group");
+      }
+    }
+    else
+    {
+      alert("Interface already inside group!!");
     }
     }
+  }
   };
-  
+
   // useEffect(() => {
   //   // Load data from local storage on component mount
   //   const storedNodes = localStorage.getItem('flowchart-nodes');
@@ -772,6 +766,7 @@ const DnDFlow = () => {
             panOnScroll
             minZoom={1}
             maxZoom={1}
+            className="touchdevice-flow"
            // onNodeDragStart={onNodeDragStart}
             //onNodeDrag={onNodeDrag}
            onNodeDragStop={onNodeDragStop}

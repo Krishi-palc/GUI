@@ -1,6 +1,6 @@
 .z1{
-    border:10px solid black;
-    background-color:black;
+    border:10px solid #4d3319;
+    background-color:#4d3319;
     color:white;
     width:120px;
     height: 40px;
@@ -12,8 +12,8 @@
     font-size: sm;
 }
 #z2{
-    border:10px solid black;
-    background-color:black;
+    border:10px solid #4d3319;
+    background-color:#4d3319;
     color:white;
     width:100px;
     justify-content:center;
@@ -30,8 +30,8 @@
     cursor: pointer;
 }
 .z3{
-    border:10px solid black;
-    background-color:black;
+    border:1px solid #4d3319;
+    background-color:#4d3319;
     color:white;
     width:150px;
     height: 40px;
@@ -42,4 +42,5 @@
     font-size: sm;
     border-radius: 5px;
     cursor: pointer;
+    padding-top: 5px;
 }
