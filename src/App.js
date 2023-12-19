@@ -706,22 +706,22 @@ const DnDFlow = () => {
   }
   };
 
-  // useEffect(() => {
-  //   // Load data from local storage on component mount
-  //   const storedNodes = localStorage.getItem('flowchart-nodes');
-  //   const storedEdges = localStorage.getItem('flowchart-edges');
+  useEffect(() => {
+    // Load data from local storage on component mount
+    const storedNodes = localStorage.getItem('flowchart-nodes');
+    const storedEdges = localStorage.getItem('flowchart-edges');
 
-  //   if (storedNodes && storedEdges) {
-  //     setNodes(JSON.parse(storedNodes));
-  //     setEdges(JSON.parse(storedEdges));
-  //   }
-  // }, []);
+    if (storedNodes && storedEdges) {
+      setNodes(JSON.parse(storedNodes));
+      setEdges(JSON.parse(storedEdges));
+    }
+  }, []);
   
-  // useEffect(() => {
-  //   // Save data to local storage whenever nodes or edges change
-  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
-  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
-  // }, [nodes, edges]);
+  useEffect(() => {
+    // Save data to local storage whenever nodes or edges change
+    localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+    localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  }, [nodes, edges]);
  
 
   // OnConnect Left Right Layout is there
