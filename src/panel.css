@@ -10,7 +10,7 @@
  
 .panel1{
   border: #4d3319;
-  height: 80%;
+  height: 90%;
   overflow-y: scroll;
   justify-content: center;
 }
@@ -23,9 +23,13 @@
 }
 
 
-.panel1 #r2{
+.panel1 #r2 {
   background-color: #4d3319;
+  width: 100px;
+  height: 20px;
 }
+
+
 
 
 .panel #a1{

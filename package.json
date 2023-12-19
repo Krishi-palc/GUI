@@ -17,7 +17,8 @@
     "react-loader-spinner": "^5.4.5",
     "react-scripts": "^5.0.1",
     "react-switch": "^7.0.0",
-    "reactflow": "11.9.4"
+    "reactflow": "11.9.4",
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
