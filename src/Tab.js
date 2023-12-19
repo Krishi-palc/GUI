@@ -7,6 +7,7 @@ import FilterPopup from './FilterPopup';
 const Example = (props) => {
  
     const [key, setKey] = useState('general');
+    console.log("tab called");
   
     const handleTabChange = (k) => {
       setKey(k);

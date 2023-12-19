@@ -1,7 +1,9 @@
 import Tab  from "./Tab";
 import React, { useState} from "react";
+import "./Model.css";
 function Modal({close, nodeId, onDelete}) {
     const [activeTab, setActiveTab] = useState('general');
+    console.log("Model called");
 
     const handleTabChange = (tab) => {
       setActiveTab(tab);

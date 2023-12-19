@@ -26,8 +26,6 @@ let fid = 1; // Filter id
 const createFid = () => { fid = 1};
 const getFId = () => `${fid++}`;
 const getFId1 = () => `${fid}`;
-
-
 const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
@@ -75,7 +73,6 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   return { nodes, edges };
 };
 
-
 const DnDFlow = () => {
 
   let initialNodes = [];
@@ -89,12 +86,6 @@ const DnDFlow = () => {
       }
      
       initialNodes = await response.json();
-      // console.log(initialNodes);
-      // const Nodes1 = await response.json();
-      // setinitialNodes(Nodes1);
-      // const Nodes = await response.json();
-      // console.log(Nodes);
-      // return Nodes;
     }
     catch (error) {
       console.error(error);
@@ -102,15 +93,12 @@ const DnDFlow = () => {
   };
 
   GetNodes();
-  // console.log(initialNodes);
-  
-
+ 
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
-  const [showEthModal, setshowEthModal] = useState(false);
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
@@ -118,8 +106,6 @@ const DnDFlow = () => {
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
   
-
- 
   let gid = 1;
   const [grps, setGrps] = useState([]);
   const createGId= () => {
@@ -148,6 +134,7 @@ const DnDFlow = () => {
         },
         [nodes, edges,selectedNodes]
       );
+
   // On Connect
   const onConnect = useCallback(
     (params) => {
@@ -247,12 +234,10 @@ const DnDFlow = () => {
         const name = event.dataTransfer.getData("name");
 
         let newNode;
-        
         let sourcePos = null;
         let targetPos = null;
         let type2 = null;
-        
-
+      
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
@@ -263,7 +248,6 @@ const DnDFlow = () => {
           y: event.clientY - reactFlowBounds.top
         });
       
-
         if (position.x <= 490) {
             sourcePos = "right";
             type2 = "CustomInputNode";
@@ -271,7 +255,6 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "CustomOutputNode";
         }
-
         {
           //Create the id for all node Ethernet
           id = createEid(id);
@@ -298,7 +281,6 @@ const DnDFlow = () => {
         }
 
         setNodes((nds) => nds.concat(newNode));
-
         // Insert the node into db
         fetch(`${url1}/Node`, {
                 method: 'POST',
@@ -334,12 +316,10 @@ const DnDFlow = () => {
 
   // Menu
   const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
-
   const onNodeContextMenu = useCallback(
     (e, node) => {
       // Prevent native context menu from showing
       e.preventDefault();
-      
       setMenu({
         nodes:nodes,
         node:node,
@@ -363,7 +343,6 @@ const DnDFlow = () => {
     while(nodes.some((node) => node.id === ID1)){
       ID1 = getFId();
     }
-
     const pos = 90 * (ID1);
     const newnode = {
       id: ID1,
@@ -434,7 +413,6 @@ const DnDFlow = () => {
       if (targetNode) {
         acc.push(targetNode);
       }
-   
       return acc;
     }, []);
    
@@ -446,9 +424,6 @@ const DnDFlow = () => {
     setEdges((prevEdges) =>
       prevEdges.filter((edge) => !connectedEdges.includes(edge))
     );
-   
-    // Make API calls or perform any additional actions to delete data from your server
-   
     // Close the modal
     setshowModal(false);
   }, [nodes, edges]);
@@ -460,13 +435,11 @@ const DnDFlow = () => {
         setCtrlKeyPressed(true);
       }
     };
-
     const handleKeyUp = (e) => {
       if (!e.ctrlKey) {
         setCtrlKeyPressed(false);
       }
     };
-
     // Attach event listeners
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
@@ -477,22 +450,19 @@ const DnDFlow = () => {
       document.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
   // Click the filter node
   const onNodeClick = (event, node) => {
     let flag=false;
     if (ctrlKeyPressed) {
       // Toggle the selected state of the clicked node
       setSelectedNodes((prevSelectedNodes) => {
-       
         const newSelectedNodes = new Set(prevSelectedNodes);
-       
         if (newSelectedNodes.has(node.id)) {
           newSelectedNodes.delete([node.id,node.type]);
         } else {
           newSelectedNodes.add([node.id,node.type]);
         }
-   
-      
         return newSelectedNodes;
       });
     }
@@ -546,10 +516,6 @@ const DnDFlow = () => {
             console.error('Error:', error);
           });
         } 
-    }
-    else{
-      setshowEthModal(true);
-      setNodeId(Math.round(node.id/1000));
     }
   };
 
@@ -673,8 +639,7 @@ const DnDFlow = () => {
         const childNodePosition = {
           x: node.position.x - targetNode.position.x,
           y: node.position.y - targetNode.position.y,
-        };
-    
+        };   
         const updatedNode = {
           ...node,
           parentNode: targetNode.id,
@@ -723,7 +688,6 @@ const DnDFlow = () => {
     localStorage.setItem('flowchart-edges', JSON.stringify(edges));
   }, [nodes, edges]);
  
-
   // OnConnect Left Right Layout is there
   // useEffect(() => {
   //   if (connectionMade) {
@@ -732,8 +696,6 @@ const DnDFlow = () => {
   //   }
   // }, [connectionMade, onLayout]);
   
-
-
   return (
     <div className="dndflow">
       <Sidebar />
@@ -743,10 +705,6 @@ const DnDFlow = () => {
         {showModal && (
             <Modal close={setshowModal} nodeId={nodeId} onDelete={onDelete} />
         )}
-        {/* { showEthModal && (
-          <EthModal close={setshowEthModal} nodeId={nodeId}/>
-          )
-        } */}
           <ReactFlow
             ref={ref}
             nodes={nodes}
@@ -767,15 +725,12 @@ const DnDFlow = () => {
             minZoom={1}
             maxZoom={1}
             className="touchdevice-flow"
-           // onNodeDragStart={onNodeDragStart}
-            //onNodeDrag={onNodeDrag}
-           onNodeDragStop={onNodeDragStop}
+            onNodeDragStop={onNodeDragStop}
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
             <Panel position="top-center" id='z2' onClick={onclick} >Filter 
-            {/*<!--img src="plus.png" alt="Mapping"></img-->*/}
             </Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel>
             <Panel position="bottom-left" className='z3' onClick={() => group()}>Group</Panel>
@@ -788,5 +743,4 @@ const DnDFlow = () => {
     </div>
   );
 };
-
 export default DnDFlow;
