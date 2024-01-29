@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Handle} from 'reactflow';
 import "./CustomOutput.css";
-function CustomInputNode({ data }) {
+function CustomGroupNode({ data }) {
   // console.log(data);
     return (
         <div id="a1">
@@ -11,13 +11,8 @@ function CustomInputNode({ data }) {
                 )}
                 {data.name}
              </div>
-             <Handle type="target" position="left" />
         </div>
       );
     }
 
-export default memo(CustomInputNode);
-
-
-
-       
+export default memo(CustomGroupNode);

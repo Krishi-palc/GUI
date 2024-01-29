@@ -1,7 +1,9 @@
 import Tab  from "./Tab";
 import React, { useState} from "react";
+import "./Model.css";
 function Modal({close, nodeId, onDelete}) {
     const [activeTab, setActiveTab] = useState('general');
+    console.log("Model called");
 
     const handleTabChange = (tab) => {
       setActiveTab(tab);
@@ -18,7 +20,7 @@ function Modal({close, nodeId, onDelete}) {
                     <Tab nodeId={nodeId} onTabChange={handleTabChange}/>
                 </div>
                 <div className="modal_footer">
-                   
+                    {/* <button className='my-button' onClick={() => onDelete(nodeId)}>Delete</button> */}
                     {activeTab === 'general' && ( <button className="my-button" onClick={() => onDelete(nodeId)}>
                         Delete
                     </button>)}

@@ -11,32 +11,32 @@ import url1 from "./url1";
 import dagre from "dagre";
 import "./app.css";
 import LoadingPage from "./LoadingPage";
-import ResizableNodeSelected from "./ResizableNode";
-import SidebarRight from "./SidebarRight";
+import ResizableNodeInput from "./ResizableNodeInput";
+import ResizableNodeOutput from "./ResizableNodeOutput";
 import CustomFilterNode from "./CustomFilterNode";
 import CustomInputNode from "./CustomInputNode";
 import CustomOutputNode from "./CustomOutputNode";
+import CustomGroupNode from "./CustomGroupNode";
+
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, toast } from "react-toastify";
 
 import "./index1.css";
-import EthModal from "./EthModal";
-
 
 let fid = 1; // Filter id
 const createFid = () => { fid = 1};
 const getFId = () => `${fid++}`;
 const getFId1 = () => `${fid}`;
-
-let gid = 1; // Filter id
-const getGId = () => `Group${gid++}`;
-
 const createEid = (id) => `${id*1000}`;
 const getEid = (id) => `${++id}`;
 
 const nodeTypes = {
-  ResizableNodeSelected,
+  ResizableNodeInput,
+  ResizableNodeOutput,
   CustomFilterNode,
   CustomInputNode,
-  CustomOutputNode
+  CustomOutputNode,
+  CustomGroupNode,
 }
 
 const panOnDrag = [2, 2];
@@ -44,7 +44,7 @@ const panOnDrag = [2, 2];
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
  
-const nodeWidth = 250;
+const nodeWidth = 390;
 const nodeHeight = 10;
  
 // For Dagre Tree Layout
@@ -67,30 +67,75 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
       node.targetPosition = isHorizontal ? "left" : "top";
       node.sourcePosition = isHorizontal ? "right" : "bottom";
       node.position = {
-          x: nodeWithPosition.x - nodeWidth /2,
-          y: nodeWithPosition.y - nodeHeight /2
+          x: nodeWithPosition.x - nodeWidth / 2,
+          y: nodeWithPosition.y - nodeHeight / 2
       };
       return node;
   });
   return { nodes, edges };
 };
 
-// const [initialNodes, setinitialNodes] = useState([]);
-
-// let initialNodes = [];
-
 const DnDFlow = () => {
 
+  let initialNodes = [];
+  const GetNodes = async () => {
+    try {
+      const url = `${url1}/Node`;
+      const response = await fetch(url);
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+     
+      initialNodes = await response.json();
+    }
+    catch (error) {
+      console.error(error);
+    }
+  };
+
+  GetNodes();
+ 
   const reactFlowWrapper = useRef(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [showModal, setshowModal] = useState(false);
-  const [showEthModal, setshowEthModal] = useState(false);
   const [nodeId, setNodeId] = useState(0);
   const [menu, setMenu] = useState(null);
   const ref = useRef(null);
   const [connectionMade, setConnectionMade] = useState(false);
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+  
+  let gid = 1;
+  const [grps, setGrps] = useState([]);
+  const createGId= () => {
+    gid = 1
+  };
+  const getGId = () => `Group${gid++}`;
+
+  // OnLayout
+  const onLayout = useCallback(
+    (direction) => {
+    const {
+        nodes: layoutedNodes,
+        edges: layoutedEdges
+        } = getLayoutedElements(nodes, edges, direction);
+    // Update the position of each node to start a few steps below its original position
+        const yOffset = 90; // Adjust this value to set the desired vertical offset
+        const xOffSet = 40;
+        const adjustedNodes = layoutedNodes.map((node) => (
+            {
+              ...node,
+              position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
+            }
+        ));         
+        setNodes([...adjustedNodes]);
+        setEdges([...layoutedEdges]);
+        },
+        [nodes, edges,selectedNodes]
+      );
 
   // On Connect
   const onConnect = useCallback(
@@ -98,7 +143,7 @@ const DnDFlow = () => {
       const sourceNode = nodes.filter((node) => node.id === params.source);
       const targetNode = nodes.filter((node) => node.id === params.target);
       
-      //Single map has no duplicate interface
+      //Single map has no duplication
       let hasSingleTarget = false;
       let hasSingleSource = false;
       if(sourceNode[0].type1==="filter"){
@@ -107,68 +152,82 @@ const DnDFlow = () => {
       }
       else if(targetNode[0].type1==="filter"){
         const FilterEdges = edges.filter((edge) => (edge.source === targetNode[0].id) || (edge.target=== targetNode[0].id));
-        hasSingleSource = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
+        hasSingleTarget = FilterEdges.some((edge) => (Math.round(edge.source/1000) === Math.round(sourceNode[0].id/1000)) || (Math.round(edge.target/1000) === Math.round(sourceNode[0].id/1000)));
       }
 
-      // Interface max connection is 1
       const hasSource = edges.some((edge) => (edge.source === params.source) && (sourceNode[0].type1==="normal"));
       const hasTarget = edges.some((edge) => (edge.target === params.target) && (targetNode[0].type1==="normal"));
 
-      // console.log(edges);
-      if(sourceNode[0].type1 !== targetNode[0].type1){ // Interface to filter Connection (Manual Filter Connection)
-        if((!hasSource && !hasTarget)){ // Interface max connection == 1
-          if(!hasSingleSource && !hasSingleTarget){ // Single map has no duplicate interface
-              setEdges((eds) => addEdge(
-                {
-                  ...params,
-                  style: {
-                    stroke: 'black'
-                  }
-                }, 
-              eds));
-              setConnectionMade(true);
+      console.log(Math.floor(sourceNode[0].id/1000)!==(Math.floor(targetNode[0].id/1000)));
+      const flag=Math.floor(sourceNode[0].id/1000)!==(Math.floor(targetNode[0].id/1000));
+      
+      if(flag===false){
+        toast.error("Cannot connect to the same interface");
+      }
+
+      if((sourceNode[0].type1 !== targetNode[0].type1)){ // Same type nodes does not connect
+        if((!hasSource && !hasTarget)){ // Ethernet node has only one connection
+          if(!hasSingleSource && !hasSingleTarget){
+            setEdges((eds) => addEdge(
+              {
+                ...params,
+                style: {
+                  stroke: 'black'
+                }
+              }, 
+            eds));
+            setConnectionMade(true);
+          }
+          else{
+            toast.error("Interface already exits in the map");
           }
         }
       }
-      else{ // Interface to Interface (Auto Map Creation through filter) 
-          if((!hasSource && !hasTarget)){ // Interface max connection == 1
-              if(Math.round(sourceNode[0].id / 1000) !== Math.round(targetNode[0].id / 1000)){ // Single map has no duplicate interface
-                  onclick();
-                  let id = getFId1() - 1;
+      else{ // Same type auto connect
+        if((!hasSource && !hasTarget) && (flag===true)){ // Ethernet node has only one connection
+          const x = Math.round(( sourceNode[0].position.x + targetNode[0].position.x ) / 2 );
+          const y = Math.round(( sourceNode[0].position.y + targetNode[0].position.y ) / 2 );
 
-                  const params1 = {
-                    "source" : params.source,
-                    "sourceHandle" : params.sourceHandle,
-                    "target" : `${id}`,
-                    "targetHandle" : params.targetHandle
-                  };
-                  const params2 = {
-                    "source" : `${id}`,
-                    "sourceHandle" : params.sourceHandle,
-                    "target" : params.target,
-                    "targetHandle" : params.targetHandle
-                  };
+          if(!hasSingleSource && !hasSingleTarget){
+            onclick({x,y});
+            let id = getFId1() - 1;
+            const params1 = {
+              "source" : params.source,
+              "sourceHandle" : params.sourceHandle,
+              "target" : `${id}`,
+              "targetHandle" : params.targetHandle
+            };
 
-                  setEdges((eds) => addEdge(
-                    {
-                      ...params1,
-                      style: {
-                        stroke: 'black'
-                      }
-                    }, 
-                  eds));
-                  setEdges((eds) => addEdge(
-                    {
-                      ...params2,
-                      style: {
-                        stroke: 'black'
-                      }
-                    }, 
-                  eds));
-                  setConnectionMade(true);
-            }
+            const params2 = {
+              "source" : `${id}`,
+              "sourceHandle" : params.sourceHandle,
+              "target" : params.target,
+              "targetHandle" : params.targetHandle
+            };
+            setEdges((eds) => addEdge(
+              {
+                ...params1,
+                style: {
+                  stroke: 'black'
+                }
+              }, 
+            eds));
+            setEdges((eds) => addEdge(
+              {
+                ...params2,
+                style: {
+                  stroke: 'black'
+                }
+              }, 
+            eds));
+            setConnectionMade(true);
+          }
+          
         }
-    }
+        // else{
+        //   toast.error("Given interface already exits");
+        // }
+      }
     },
     [edges,nodes,onLayout]
   );
@@ -189,11 +248,10 @@ const DnDFlow = () => {
         const name = event.dataTransfer.getData("name");
 
         let newNode;
-
         let sourcePos = null;
         let targetPos = null;
         let type2 = null;
-
+      
         // check if the dropped element is valid
         if (typeof type === "undefined" || !type) {
             return;
@@ -204,7 +262,6 @@ const DnDFlow = () => {
           y: event.clientY - reactFlowBounds.top
         });
       
-
         if (position.x <= 490) {
             sourcePos = "right";
             type2 = "CustomInputNode";
@@ -212,29 +269,14 @@ const DnDFlow = () => {
             targetPos = "left";
             type2 = "CustomOutputNode";
         }
-
-
-        if (type==="group"){
-            do{
-              id = getGId();
-            }while(nodes.some((node) => node.id === id));
-            newNode = {
-              id: id,
-              position,
-              sourcePosition: sourcePos,
-              targetPosition: targetPos,
-              data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}e1.jpg`},
-              type:"ResizableNodeSelected",
-              type1: "normal",
-              draggable: true,
-          };
-        }
-        else{
+        {
           //Create the id for all node Ethernet
           id = createEid(id);
           while(nodes.some((node) => node.id === id)){
             id = getEid(id);
           }
+          let parent=null;
+        let extent=null;
 
           // Handler Position on nodes based on the PORT (Network | Tool)
           newNode = {
@@ -242,15 +284,17 @@ const DnDFlow = () => {
             position,
             sourcePosition: sourcePos,
             targetPosition: targetPos,
-            data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}e1.jpg`},
+            data: { name: `${name}`, job:"hello", image:`${process.env.PUBLIC_URL}eth_icon.jpg`},
             type: type2,
             type1: "normal",
-            draggable: false
+            parentNode:parent,
+            extent:extent,
+            draggable: true,
+             isHidden: false,
           };
         }
 
         setNodes((nds) => nds.concat(newNode));
-
         // Insert the node into db
         fetch(`${url1}/Node`, {
                 method: 'POST',
@@ -286,16 +330,16 @@ const DnDFlow = () => {
 
   // Menu
   const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
-
   const onNodeContextMenu = useCallback(
     (e, node) => {
       // Prevent native context menu from showing
       e.preventDefault();
-      
       setMenu({
+        nodes:nodes,
+        node:node,
         id: node.id,
-        name: node.data.label,
-        type1: node.type1,
+        name: node.data?.label,
+        type1: node.type,
         top: e.clientY,
         left: e.clientX,
         right: false,
@@ -303,7 +347,7 @@ const DnDFlow = () => {
         draggable: false
       });
     },
-    [setMenu]
+    [setMenu, nodes]
   );
 
   // onclick the filter 
@@ -314,16 +358,22 @@ const DnDFlow = () => {
       ID1 = getFId();
     }
 
-    const pos = 90 * (ID1);
+    var pos = {};
+    if(event.x && event.y){
+      pos = { x: event.x, y: event.y };
+    }
+    else{
+      pos = { x: 490, y: (90 * (ID1)) };
+    }
+
     const newnode = {
       id: ID1,
-      position: { x: 490, y: pos },
+      position: pos,
       sourcePosition: 'right',
       targetPosition: 'left',
-      data: { name: `Filter ${ID1}`, job:"hello", image:`${process.env.PUBLIC_URL}etherner.jpg`},
+      data: { name: `Filter ${ID1}`, job: 'Filter', image: `${process.env.PUBLIC_URL}/filter.jpg`},
       type1: "filter",
-      type: "CustomFilterNode",
-      // draggable: false
+      type: "CustomFilterNode"
     };
 
     // Insert the node
@@ -358,114 +408,7 @@ const DnDFlow = () => {
 
     setNodes((nds) => nds.concat(newnode));
   }, [nodes]);
-
-  // Click the filter node
-  const onNodeClick = (event, node) => {
-    if (node.type1 === "filter") {
-      // Check the connection 
-      const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
-      const hasLeftConnection = connectedEdges.some((edge) => edge.target === node.id);
-      const hasRightConnection = connectedEdges.some((edge) => edge.source === node.id);
   
-      if (hasLeftConnection && hasRightConnection) {
-        setshowModal(true);
-        // Set the node for model
-        setNodeId(node.id);
-        // onLayout('LR'); 
-        // Insert the Map
-
-        // Target and source Mention
-        let target1 = connectedEdges.filter((edge) => edge.source === node.id);
-        let source1 = connectedEdges.filter((edge) => edge.target === node.id);
-        let targets = [];
-        for(let i=0; i < target1.length ; i++){
-          targets[i] = Math.round(target1[i].target/1000);
-        }
-        let sources = [];
-        for(let i=0; i < source1.length ; i++){
-          sources[i] = Math.round(source1[i].source/1000);
-        }
-
-        fetch(`${url1}/Map`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id : node.id,
-                from : sources,
-                to : targets,
-                description : "Filter "+node.id
-            }),
-        })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // console.log('Updated data:', data);
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-          });
-        } 
-    }
-    else{
-      setshowEthModal(true);
-      setNodeId(Math.round(node.id/1000));
-    }
-  };
-
-     // OnLayout
-     const onLayout = useCallback(
-      (direction) => {
-          const {
-            nodes: layoutedNodes,
-            edges: layoutedEdges
-          } = getLayoutedElements(nodes, edges, direction);
-  
-          // Update the position of each node to start a few steps below its original position
-          const yOffset = 90; // Adjust this value to set the desired vertical offset
-          const xOffSet = 40;
-          const adjustedNodes = layoutedNodes.map((node) => (
-            {
-                ...node,
-               position: { x: node.position.x + xOffSet, y: node.position.y + yOffset }
-            }
-          ));
-         
-          setNodes([...adjustedNodes]);
-          setEdges([...layoutedEdges]);
-      },
-      [nodes, edges]
-    );
-
-  // useEffect(() => {
-  //   // Load data from local storage on component mount
-  //   const storedNodes = localStorage.getItem('flowchart-nodes');
-  //   const storedEdges = localStorage.getItem('flowchart-edges');
-
-  //   if (storedNodes && storedEdges) {
-  //     setNodes(JSON.parse(storedNodes));
-  //     setEdges(JSON.parse(storedEdges));
-  //   }
-  // }, []);
-  
-  // useEffect(() => {
-  //   // Save data to local storage whenever nodes or edges change
-  //   localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
-  //   localStorage.setItem('flowchart-edges', JSON.stringify(edges));
-  // }, [nodes, edges]);
-
-  // OnConnect Left Right Layout is there
-  useEffect(() => {
-    if (connectionMade) {
-      onLayout('LR');
-      setConnectionMade(false);
-    }
-  }, [connectionMade, onLayout]);
   const onDelete = useCallback((nodeId) => {
     // Find the filter node to be deleted
     const filterNode = nodes.find((node) => node.id === nodeId);
@@ -492,7 +435,6 @@ const DnDFlow = () => {
       if (targetNode) {
         acc.push(targetNode);
       }
-   
       return acc;
     }, []);
    
@@ -504,14 +446,339 @@ const DnDFlow = () => {
     setEdges((prevEdges) =>
       prevEdges.filter((edge) => !connectedEdges.includes(edge))
     );
-   
-    // Make API calls or perform any additional actions to delete data from your server
-   
     // Close the modal
     setshowModal(false);
   }, [nodes, edges]);
 
+  useEffect(() => {
+    // Handle keydown and keyup events to track the Ctrl key status
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey) {
+        setCtrlKeyPressed(true);
+      }
+    };
+    const handleKeyUp = (e) => {
+      if (!e.ctrlKey) {
+        setCtrlKeyPressed(false);
+      }
+    };
+    // Attach event listeners
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
 
+    // Cleanup event listeners on component unmount
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Click the filter node
+  const onNodeClick = (event, node) => {
+    let flag=false;
+    if (ctrlKeyPressed) {
+      // Toggle the selected state of the clicked node
+      setSelectedNodes((prevSelectedNodes) => {
+        const newSelectedNodes = new Set(prevSelectedNodes);
+        if (newSelectedNodes.has(node.id)) {
+          newSelectedNodes.delete([node.id,node.type]);
+        } else {
+          newSelectedNodes.add([node.id,node.type]);
+        }
+        return newSelectedNodes;
+      });
+    }
+   
+    let id=node.id;
+    if (node.type1 === "filter") {
+      // Check the connection 
+      const connectedEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id);
+      const hasLeftConnection = connectedEdges.some((edge) => edge.target === node.id);
+      const hasRightConnection = connectedEdges.some((edge) => edge.source === node.id);
+  
+      if (hasLeftConnection && hasRightConnection) {
+        setshowModal(true);   
+        // Set the node for model
+        setNodeId(node.id);
+        // onLayout('LR');
+        // Target and source Mention
+        let target1 = connectedEdges.filter((edge) => edge.source === node.id);
+        let source1 = connectedEdges.filter((edge) => edge.target === node.id);
+        let targets = [];
+        for(let i=0; i < target1.length ; i++){
+          targets[i] = Math.round(target1[i].target/1000);
+        }
+        let sources = [];
+        for(let i=0; i < source1.length ; i++){
+          sources[i] = Math.round(source1[i].source/1000);
+        }
+
+        fetch(`${url1}/Map`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id : node.id,
+                from : sources,
+                to : targets,
+                description : node.data.name
+            }),
+        })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Updated data:', data);
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+        } 
+    }
+  };
+
+   //Grouping
+   const group = useCallback(
+    () => {
+        const selectedNodeTypesArray = Array.from(selectedNodes).map(([id, type]) => type);
+
+        // Check connected nodes
+        var connectNodeCheck = false;
+        selectedNodes.forEach((node) => {
+          const checkEdge = edges.filter((edge) => (edge.source === node[0]) || (edge.target=== node[0]));
+          console.log(checkEdge);
+          if(checkEdge.length > 0){
+            connectNodeCheck = true;
+          }
+        });
+
+        if(connectNodeCheck){
+          setSelectedNodes(new Set());
+          toast.error("Connection already exists");
+          return;
+        }
+        
+        // Check same selected or not ?
+        var selectedNodeCheckList = [];
+        var selectedNodeDuplicateCheck = false;
+        selectedNodes.forEach((node) => {
+          selectedNodeCheckList.push(Math.round(parseInt(node[0])/1000));
+        });
+        var countDict = {};
+        selectedNodeCheckList.forEach((value) => {
+          if (countDict.hasOwnProperty(value)) {
+            countDict[value]++;
+          } else {
+            countDict[value] = 1;
+          }
+        });
+        for (const key in countDict) {
+          if (countDict[key] > 1) {
+            selectedNodeDuplicateCheck = true;
+            break;
+          }
+        }
+
+
+        if (selectedNodeTypesArray.length <= 1) {
+          toast.error("select more than one node for group!!");
+        }
+        else{
+          if(selectedNodeDuplicateCheck){
+            toast.error("Same node can't be in the single group!!");
+            setSelectedNodes(new Set());
+            return;
+          } 
+          const firstNodeType = selectedNodeTypesArray[0];
+          if(selectedNodeTypesArray.every((node) => node=== firstNodeType)){
+            let newNode;
+            let gid;
+            let c=0,posx,posy;
+            let stopLoop;            
+            gid = createGId();
+            const GroupNodes = nodes.filter((node) => node.type === "ResizableNodeInput" || node.type === "ResizableNodeOutput");
+          
+            do{
+                gid = getGId();
+            }while(GroupNodes.some((node) => node.id === gid));
+            setGrps((grps) => grps.concat(gid));
+          
+            nodes.find((node) => {
+              const selectedNodeArray = Array.from(selectedNodes).map(([id, type]) => id);
+        
+              if (selectedNodeArray.includes(node.id)) {
+            
+                if (firstNodeType==="CustomInputNode"){
+                  newNode = {
+                      id: gid,
+                      position: node.position,
+                      style: {
+                          width: 270,
+                          height: 240,
+                      },
+                      type: "ResizableNodeInput",
+                      draggable: true,
+                      isHidden: false,
+                  };
+                }
+                else{
+                  newNode = {
+                    id: gid,
+                    position: node.position,
+                    style: {
+                        width: 270,
+                        height: 240,
+                    },
+                    type: "ResizableNodeOutput",
+                    draggable: true,
+                    isHidden: false,
+                }
+              }
+                  posx=node.position.x;
+                  posy=node.position.y;
+                  stopLoop = true; // Set the flag to stop the loop
+                  return true; // Return true to exit the some method
+              }
+          });
+            nodes.forEach((node) => {
+            const selectedNodeArray = Array.from(selectedNodes).map(([id, type]) => id);
+            if (selectedNodeArray.includes(node.id)) {
+                const childNodePosition = {
+                    x: (posx - newNode.position.x)+10,
+                    y: (posy - newNode.position.y)+(c*10),
+                  };
+                const updatedNode = {
+                  ...node,
+                  type: "CustomGroupNode",
+                  "sourcePosition": null,
+                  "targetPosition": null,
+                  data: node.data,
+                  parentNode: newNode.id,
+                  extent: 'parent',
+                  position: childNodePosition,
+                  draggable: true,
+                  isHidden: false,
+                  connectable: false,
+                  zIndex:1
+                };
+              c=c+5;
+                setNodes((prevNodes) => [...prevNodes.filter((nd) => (nd.id !== node.id && nd.id !== newNode.id)), newNode, updatedNode]);
+              }
+              
+            });
+          }
+          else{
+              toast.error("Source and target can't be in the same group!!");           
+          }
+        }
+        setSelectedNodes(new Set());
+    },
+    [nodes, selectedNodes,setSelectedNodes,setNodes,getGId,setGrps,createGId,grps]
+  );
+ 
+  const onNodeDragStop = (evt, node) => {
+    let tpe;
+
+    if((node.type != "ResizableNodeInput" || node.type != "ResizableNodeOutput") && !node?.extent ){
+      const centerX = node.position.x + node.width / 2;
+      const centerY = node.position.y + node.height / 2;
+
+      const targetNode = nodes.find(
+        (n) =>
+          centerX > n.position.x &&
+          centerX < n.position.x + n.width &&
+          centerY > n.position.y &&
+          centerY < n.position.y + n.height &&
+          n.id !== node.id // this is needed, otherwise we would always find the dragged node
+       );
+       if (targetNode) {
+
+        const checkEdge = edges.filter((edge) => (edge.source === node.id) || (edge.target=== node.id));
+        if(checkEdge.length > 0){
+          setSelectedNodes(new Set());
+          toast.error("Connection already exists");
+          return;
+        }
+
+        const NodeinsideGroup = nodes.filter((node) => node.parentNode === targetNode.id);
+        const NodeIdinsideGroup=NodeinsideGroup.filter((nd) => Math.floor(nd.id/1000) === Math.floor(node.id/1000));    
+        if (NodeIdinsideGroup.length<1){
+          if (targetNode.type==="ResizableNodeInput"){
+            tpe="CustomInputNode";
+          }
+          else{
+            tpe="CustomOutputNode";
+          }
+          if(tpe===node.type){
+              const childNodePosition = {
+                x: node.position.x - targetNode.position.x,
+                y: node.position.y - targetNode.position.y,
+              };
+              const updatedNode = {
+                ...node,
+                type: "CustomGroupNode",
+                type1: "CustomGroupNode",
+                "sourcePosition": null,
+                "targetPosition": null,
+                data: node.data,
+                parentNode: targetNode.id,
+                extent: 'parent',
+                position: childNodePosition,
+                draggable: true,
+                isHidden: false,
+                zIndex: 1,
+              };
+          
+              setNodes((prevNodes) => {
+                const filteredNodes = prevNodes.filter((n) => n.id !== node.id);
+                return [...filteredNodes, updatedNode];
+              });
+          }
+          else
+          {
+            if (tpe==="CustomInputNode")
+                toast.error("Interface can't be dropped inside source group");
+            else
+                toast.error("Interface can't be dropped inside target group");
+          }
+      }
+      else
+      {
+        toast.error("Interface already inside group!!");
+      }
+    }
+  }
+  };
+
+  useEffect(() => {
+    // Load data from local storage on component mount
+    const storedNodes = localStorage.getItem('flowchart-nodes');
+    const storedEdges = localStorage.getItem('flowchart-edges');
+
+    if (storedNodes && storedEdges) {
+      setNodes(JSON.parse(storedNodes));
+      setEdges(JSON.parse(storedEdges));
+    }
+  }, []);
+  
+  useEffect(() => {
+    // Save data to local storage whenever nodes or edges change
+    localStorage.setItem('flowchart-nodes', JSON.stringify(nodes));
+    localStorage.setItem('flowchart-edges', JSON.stringify(edges));
+  }, [nodes, edges]);
+ 
+  // OnConnect Left Right Layout is there
+  // useEffect(() => {
+  //   if (connectionMade) {
+  //     onLayout('LR');
+  //     setConnectionMade(false);
+  //   }
+  // }, [connectionMade, onLayout]);
+  
   return (
     <div className="dndflow">
       <Sidebar />
@@ -521,10 +788,6 @@ const DnDFlow = () => {
         {showModal && (
             <Modal close={setshowModal} nodeId={nodeId} onDelete={onDelete} />
         )}
-        { showEthModal && (
-          <EthModal close={setshowEthModal} nodeId={nodeId}/>
-          )
-        }
           <ReactFlow
             ref={ref}
             nodes={nodes}
@@ -545,22 +808,21 @@ const DnDFlow = () => {
             minZoom={1}
             maxZoom={1}
             className="touchdevice-flow"
+            onNodeDragStop={onNodeDragStop}
           >
             <Controls/>
             <Panel position="top-left" className='z1'>Network Port</Panel>
             <Panel position="top-right" className='z1'>Tool Port</Panel>
-            <Panel position="top-center" id='z2' onClick={onclick} >Filter 
-            {/*<!--img src="plus.png" alt="Mapping"></img-->*/}
-            </Panel>
+            <Panel position="top-center" id='z2' onClick={onclick} >Filter</Panel>
             <Panel position="bottom-right" className='z3' onClick={() => onLayout("LR")}>Layout</Panel>
+            <Panel position="bottom-left" className='z3' onClick={() => group()}>Group</Panel>
            <LoadingPage/>
           </ReactFlow>
         </div>
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlowProvider>
-      <SidebarRight/>
+      <ToastContainer/>
     </div>
   );
 };
-
 export default DnDFlow;
